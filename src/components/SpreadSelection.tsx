@@ -1,25 +1,31 @@
 import { TarotSpread, TAROT_SPREADS } from '../data/tarotCards';
 import { HelpCircle, History, Eye, TrendingUp, Compass } from 'lucide-react';
+import { Language, UI_COPY, getLocalizedSpread } from '../data/localization';
 
 interface SpreadSelectionProps {
   onSelectSpread: (spread: TarotSpread) => void;
+  language: Language;
 }
 
-export default function SpreadSelection({ onSelectSpread }: SpreadSelectionProps) {
+export default function SpreadSelection({ onSelectSpread, language }: SpreadSelectionProps) {
   const getSpreadById = (id: string) => TAROT_SPREADS.find(s => s.id === id);
+  const copy = UI_COPY[language].spreadSelection;
 
   const yesNoSpread = getSpreadById('yesno');
   const threeCardSpread = getSpreadById('threecard');
   const celticCrossSpread = getSpreadById('celticcross');
+  const localizedYesNoSpread = yesNoSpread ? getLocalizedSpread(yesNoSpread, language) : null;
+  const localizedThreeCardSpread = threeCardSpread ? getLocalizedSpread(threeCardSpread, language) : null;
+  const localizedCelticCrossSpread = celticCrossSpread ? getLocalizedSpread(celticCrossSpread, language) : null;
 
   return (
     <div className="w-full flex flex-col items-center justify-center min-h-[calc(100vh-100px)] pt-24 md:pt-32">
       <div className="text-center mb-12 w-full px-4 text-glow-container">
         <h2 className="font-serif text-3xl md:text-5xl text-[#dfe2f3] mb-3 drop-shadow-md tracking-normal">
-          Select Your Spread
+          {copy.title}
         </h2>
         <p className="font-sans text-base md:text-lg text-[#bbc9cf] max-w-2xl mx-auto leading-relaxed">
-          Choose the constellation of cards to divine your path. Each spread offers unique insights into the energies surrounding your query.
+          {copy.description}
         </p>
       </div>
 
@@ -45,10 +51,10 @@ export default function SpreadSelection({ onSelectSpread }: SpreadSelectionProps
               
               <div className="text-center">
                 <h3 className="font-serif text-xl font-bold text-[#dfe2f3] mb-1 group-hover:text-[#ffdb40] transition-colors uppercase tracking-wider">
-                  YES OR NO
+                  {localizedYesNoSpread?.name ?? copy.yesNoTitle}
                 </h3>
                 <p className="font-sans text-sm text-[#bbc9cf]">
-                  A swift answer to a clear question.
+                  {localizedYesNoSpread?.description ?? copy.yesNoDescription}
                 </p>
               </div>
             </div>
@@ -92,10 +98,10 @@ export default function SpreadSelection({ onSelectSpread }: SpreadSelectionProps
 
             <div className="relative z-20 text-center sm:text-left sm:max-w-[280px]">
               <h3 className="font-serif text-2xl font-bold text-[#dfe2f3] mb-2 group-hover:text-[#a5e7ff] transition-colors uppercase tracking-wider">
-                THREE-CARD SPREAD
+                {localizedThreeCardSpread?.name ?? copy.threeCardTitle}
               </h3>
               <p className="font-sans text-sm text-[#bbc9cf] leading-relaxed">
-                The classic constellation revealing Past, Present, and Future energies.
+                {localizedThreeCardSpread?.description ?? copy.threeCardDescription}
               </p>
             </div>
           </button>
@@ -143,15 +149,15 @@ export default function SpreadSelection({ onSelectSpread }: SpreadSelectionProps
 
             <div className="relative z-20 flex-1 text-center md:text-left max-w-md">
               <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#dfe2f3] mb-3 group-hover:text-[#ffdb40] transition-colors uppercase tracking-wider">
-                CELTIC CROSS
+                {localizedCelticCrossSpread?.name ?? copy.celticCrossTitle}
               </h3>
               <p className="font-sans text-sm md:text-base text-[#bbc9cf] mb-4 leading-relaxed">
-                A comprehensive, deeply nuanced reading involving ten cards. Ideal for exploring complex situations, uncovering hidden influences, and projecting long-term outcomes.
+                {localizedCelticCrossSpread?.description ?? copy.celticCrossDescription}
               </p>
               
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#ffdb40]/30 bg-[#ffdb40]/10 text-[#ffdb40] font-sans font-bold text-xs uppercase tracking-widest transition-colors group-hover:bg-[#ffdb40]/20">
                 <Compass className="w-4 h-4 animate-spin-slow" />
-                Deep Dive
+                {copy.deepDive}
               </div>
             </div>
           </button>

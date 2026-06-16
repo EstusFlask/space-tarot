@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Header from './components/Header';
 import NebulaBackground from './components/NebulaBackground';
 import SpreadSelection from './components/SpreadSelection';
@@ -8,6 +8,7 @@ import OracleChatView from './components/OracleChatView';
 import ReadingsArchive from './components/ReadingsArchive';
 import { TarotScreen, DrawnCard } from './types';
 import { TarotSpread } from './data/tarotCards';
+import { DEFAULT_LANGUAGE, Language } from './data/localization';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<TarotScreen>('spread_selection');
@@ -16,6 +17,19 @@ export default function App() {
   const [question, setQuestion] = useState('');
   const [preloadedAIAnalysis, setPreloadedAIAnalysis] = useState('');
   const [showArchive, setShowArchive] = useState(false);
+  const [language, setLanguage] = useState<Language>(() => {
+    try {
+      const storedLanguage = localStorage.getItem('tarot-language');
+      return storedLanguage === 'en' ? 'en' : DEFAULT_LANGUAGE;
+    } catch {
+      return DEFAULT_LANGUAGE;
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('tarot-language', language);
+    document.documentElement.lang = language;
+  }, [language]);
 
   const handleSelectSpread = (spread: TarotSpread) => {
     setSelectedSpread(spread);
@@ -51,6 +65,10 @@ export default function App() {
     setCurrentScreen('spread_selection');
   };
 
+  const handleToggleLanguage = () => {
+    setLanguage(current => (current === 'zh' ? 'en' : 'zh'));
+  };
+
   return (
     <div className="relative min-h-screen text-[#dfe2f3] select-none">
       
@@ -63,13 +81,15 @@ export default function App() {
         onNavigateHome={handleNavigateHome}
         onResetReading={currentScreen !== 'spread_selection' ? handleResetReading : undefined}
         onShowHistory={() => setShowArchive(true)}
+        language={language}
+        onToggleLanguage={handleToggleLanguage}
       />
 
       {/* Main Content Area Container with padding for floating action bars */}
       <main className="w-full px-4 h-full">
         {currentScreen === 'spread_selection' && (
           <div className="animate-fade-in">
-            <SpreadSelection onSelectSpread={handleSelectSpread} />
+            <SpreadSelection onSelectSpread={handleSelectSpread} language={language} />
           </div>
         )}
 
@@ -78,6 +98,7 @@ export default function App() {
             <CardSelectionWheel
               spread={selectedSpread}
               onCardsSelected={handleCardsSelected}
+              language={language}
             />
           </div>
         )}
@@ -89,6 +110,7 @@ export default function App() {
               drawnCards={drawnCards}
               question={question}
               onProceedToChat={handleProceedToChat}
+              language={language}
             />
           </div>
         )}
@@ -101,6 +123,7 @@ export default function App() {
               initialAnalysis={preloadedAIAnalysis}
               question={question}
               onReset={handleNavigateHome}
+              language={language}
             />
           </div>
         )}
@@ -108,7 +131,7 @@ export default function App() {
 
       {/* Persistent Saved Readings Collapsible Archive overlay panel */}
       {showArchive && (
-        <ReadingsArchive onClose={() => setShowArchive(false)} />
+        <ReadingsArchive onClose={() => setShowArchive(false)} language={language} />
       )}
 
     </div>

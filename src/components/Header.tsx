@@ -1,19 +1,26 @@
 import { TarotScreen } from '../types';
 import { Home, Sparkles, HelpCircle, History, RotateCcw } from 'lucide-react';
+import { Language, UI_COPY } from '../data/localization';
 
 interface HeaderProps {
   currentScreen: TarotScreen;
   onNavigateHome: () => void;
   onResetReading?: () => void;
   onShowHistory?: () => void;
+  language: Language;
+  onToggleLanguage: () => void;
 }
 
 export default function Header({
   currentScreen,
   onNavigateHome,
   onResetReading,
-  onShowHistory
+  onShowHistory,
+  language,
+  onToggleLanguage,
 }: HeaderProps) {
+  const copy = UI_COPY[language].header;
+
   return (
     <header className="fixed top-0 w-full z-50 bg-[#0f131f]/40 backdrop-blur-xl border-b border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] flex justify-between items-center px-6 h-16 transition-all duration-300">
       <div className="flex items-center gap-4">
@@ -21,7 +28,7 @@ export default function Header({
           <div className="flex items-center gap-2">
             <button
               onClick={onNavigateHome}
-              title="Home"
+              title={copy.homeTitle}
               className="glass-panel rounded-full p-2 flex items-center justify-center text-[#a5e7ff] hover:drop-shadow-[0_0_8px_rgba(165,231,255,0.8)] transition-all active:scale-95 duration-200 cursor-pointer"
             >
               <Home className="w-4 h-4" />
@@ -29,7 +36,7 @@ export default function Header({
             {onResetReading && (
               <button
                 onClick={onResetReading}
-                title="Reset Reading"
+                title={copy.resetTitle}
                 className="glass-panel rounded-full p-2 flex items-center justify-center text-[#fface8] hover:drop-shadow-[0_0_8px_rgba(255,172,232,0.8)] transition-all active:scale-95 duration-200 cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -44,24 +51,32 @@ export default function Header({
             onClick={onNavigateHome}
             className="font-serif text-lg md:text-xl tracking-widest text-[#a5e7ff] drop-shadow-[0_0_8px_rgba(165,231,255,0.8)] cursor-pointer select-none font-bold"
           >
-            TAROT DIVINATION
+            {copy.title}
           </h1>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
+        <button
+          onClick={onToggleLanguage}
+          title={language === 'zh' ? '切换为 English' : 'Switch to 中文'}
+          aria-pressed={language === 'en'}
+          className="glass-panel rounded-full px-3 py-1.5 flex items-center justify-center text-[10px] font-bold tracking-[0.3em] text-[#dfe2f3] uppercase hover:text-white transition-all active:scale-95 duration-200 cursor-pointer"
+        >
+          {copy.languageLabel}
+        </button>
         {onShowHistory && (
           <button
             onClick={onShowHistory}
-            title="Readings Archive"
+            title={copy.historyTitle}
             className="text-[#bbc9cf] hover:text-[#a5e7ff] transition-colors active:scale-95 duration-200 cursor-pointer p-1"
           >
             <History className="w-5 h-5" />
           </button>
         )}
         <button
-          onClick={() => alert("Tarot Divination v2.0 - Powered by Google Gemini AI\nFocus your energy, select your spread, draw your cards, and read live spiritual interpretations.")}
-          title="Oracle Guidance"
+          onClick={() => alert(copy.guidanceAlert)}
+          title={copy.guidanceTitle}
           className="text-[#bbc9cf] hover:text-[#a5e7ff] transition-colors active:scale-95 duration-200 cursor-pointer p-1"
         >
           <HelpCircle className="w-5 h-5" />
