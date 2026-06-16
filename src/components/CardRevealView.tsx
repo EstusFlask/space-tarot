@@ -1,0 +1,473 @@
+import { useState } from 'react';
+import { DrawnCard } from '../types';
+import { getTarotImageByName, TarotSpread } from '../data/tarotCards';
+import { Sparkles, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
+
+interface CardRevealViewProps {
+  spread: TarotSpread;
+  drawnCards: DrawnCard[];
+  onProceedToChat: (preloadedAIAnalysis: string) => void;
+  question: string;
+}
+
+export default function CardRevealView({
+  spread,
+  drawnCards,
+  onProceedToChat,
+  question,
+}: CardRevealViewProps) {
+  const [flipped, setFlipped] = useState<number[]>([]); // Array of position indices that are flipped
+  const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const handleCardClick = (index: number) => {
+    if (!flipped.includes(index)) {
+      setFlipped([...flipped, index]);
+    } else {
+      // Toggle card detail panel info
+      setSelectedCardIndex(selectedCardIndex === index ? null : index);
+    }
+  };
+
+  const handleRevealAll = () => {
+    const allIndices = Array.from({ length: drawnCards.length }).map((_, i) => i);
+    setFlipped(allIndices);
+  };
+
+  const handleConsultOracle = async () => {
+    setIsAiLoading(true);
+    setAiError(null);
+
+    try {
+      // Direct call to our custom Express + Vite server endpoint!
+      const payload = {
+        spreadName: spread.name,
+        question: question,
+        cardsDrawn: drawnCards.map(dc => ({
+          name: dc.card.name,
+          positionName: dc.positionName,
+          isUpright: dc.isUpright,
+          keywords: dc.isUpright ? dc.card.uprightKeywords : dc.card.reversedKeywords,
+          arcana: dc.card.arcana,
+          description: dc.card.description
+        }))
+      };
+
+      const response = await fetch('/api/interpret-tarot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'The Oracle was momentarily disrupted. Please retry.');
+      }
+
+      const data = await response.json();
+      onProceedToChat(data.interpretation);
+    } catch (err: any) {
+      console.error('Error in Oracle consultation:', err);
+      setAiError(err.message || 'Consultation failed. Make sure your Gemini API key secrets are correctly set.');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const getThemeClass = (theme: string) => {
+    switch (theme) {
+      case 'cyan': return 'border-[#a5e7ff]/40 neon-rim-blue text-[#a5e7ff]';
+      case 'magenta': return 'border-[#fface8]/40 neon-rim-magenta text-[#fface8]';
+      case 'gold': return 'border-[#ffdb40]/40 neon-rim-gold text-[#ffdb40]';
+      case 'emerald': return 'border-emerald-400/40 neon-rim-emerald text-emerald-300';
+      case 'amber': return 'border-amber-400/40 neon-rim-amber text-amber-300';
+      default: return 'border-[#a5e7ff]/30 neon-rim-blue';
+    }
+  };
+
+  const allFlipped = flipped.length === drawnCards.length;
+
+  return (
+    <div className="w-full flex flex-col items-center justify-center min-h-[calc(100vh-100px)] pt-24 md:pt-32 text-center pb-32">
+      
+      {/* Upper info panel */}
+      <div className="text-center mb-6 w-full px-4">
+        <h2 className="font-serif text-3xl md:text-4xl text-[#dfe2f3] tracking-wide mb-1">
+          {!allFlipped ? 'Your Fate Awaits' : 'The Constellation is Revealed'}
+        </h2>
+        <p className="font-sans text-xs md:text-sm text-[#bbc9cf] max-w-lg mx-auto">
+          {!allFlipped 
+            ? 'Touch the face-down cards to channel input energy and reveal their secrets.' 
+            : 'Explore drawn cards to analyze their traditional meanings, then initiate AI Analyst integration.'}
+        </p>
+        
+        {question && (
+          <div className="mt-3 inline-block bg-[#1b1f2c]/55 border border-[#a5e7ff]/20 rounded-full px-4 py-1 font-sans text-xs text-[#a5e7ff] tracking-wide">
+            Focus Query: <span className="italic text-white">"{question}"</span>
+          </div>
+        )}
+      </div>
+
+      {/* RENDER THE CORRESPONDING SPREAD LAYOUT */}
+      {spread.id === 'yesno' && (
+        <div className="relative w-full max-w-sm h-96 flex items-center justify-center my-6">
+          {/* Card Plinth Glow */}
+          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-48 h-12 bg-[#a5e7ff]/10 rounded-full blur-2xl pointer-events-none" />
+          
+          <TarotCardFlipItem
+            dc={drawnCards[0]}
+            isFlipped={flipped.includes(0)}
+            onClick={() => handleCardClick(0)}
+            themeClass={getThemeClass(drawnCards[0].card.colorTheme)}
+          />
+        </div>
+      )}
+
+      {spread.id === 'threecard' && (
+        <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-4xl px-4 my-6">
+          {drawnCards.map((dc, index) => (
+            <div key={index} className="flex flex-col items-center gap-2 w-full max-w-[240px]">
+              <span className="font-serif text-[#a5e7ff] text-xs font-bold tracking-widest uppercase mb-1">
+                {dc.positionName}
+              </span>
+              <TarotCardFlipItem
+                dc={dc}
+                isFlipped={flipped.includes(index)}
+                onClick={() => handleCardClick(index)}
+                themeClass={getThemeClass(dc.card.colorTheme)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {spread.id === 'celticcross' && (
+        <div className="relative w-full max-w-5xl flex flex-col xl:flex-row items-center justify-center gap-12 my-6 px-4">
+          
+          {/* Group 1: The Ring/Cross Cluster */}
+          <div className="relative w-[340px] h-[340px] sm:w-[440px] sm:h-[440px] flex items-center justify-center">
+            
+            {/* Positioning Cards in traditional shape */}
+            
+            {/* Position 1: Central Situation / Present */}
+            <div className={`absolute w-22 h-34 sm:w-26 sm:h-38 transition-all duration-300 hover:scale-110 hover:z-30 cursor-pointer ${
+              selectedCardIndex === 0 ? 'z-30 scale-105 shadow-2xl shadow-[#a5e7ff]/10' : 'z-10'
+            }`}>
+              <TarotCardFlipItem
+                dc={drawnCards[0]}
+                isFlipped={flipped.includes(0)}
+                onClick={() => handleCardClick(0)}
+                themeClass={getThemeClass(drawnCards[0].card.colorTheme)}
+                compact
+              />
+              <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans tracking-tight">1. Present</span>
+            </div>
+
+            {/* Position 2: Obstacle (Overlapping rotated) */}
+            <div className={`absolute w-22 h-34 sm:w-26 sm:h-38 rotate-90 transform translate-x-2 transition-all duration-300 hover:scale-110 hover:z-30 cursor-pointer ${
+              selectedCardIndex === 1 ? 'z-30 scale-105 shadow-2xl shadow-[#fface8]/10' : 'z-20'
+            }`}>
+              <TarotCardFlipItem
+                dc={drawnCards[1]}
+                isFlipped={flipped.includes(1)}
+                onClick={() => handleCardClick(1)}
+                themeClass={getThemeClass(drawnCards[1].card.colorTheme)}
+                compact
+              />
+              <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans tracking-tight -rotate-90">2. Obstacle</span>
+            </div>
+
+            {/* Position 3: Subconscious (Below center) */}
+            <div className="absolute bottom-0 z-10 w-22 h-34 sm:w-26 sm:h-38">
+              <TarotCardFlipItem
+                dc={drawnCards[2]}
+                isFlipped={flipped.includes(2)}
+                onClick={() => handleCardClick(2)}
+                themeClass={getThemeClass(drawnCards[2].card.colorTheme)}
+                compact
+              />
+              <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans tracking-tight">3. Deep Roots</span>
+            </div>
+
+            {/* Position 4: Past Base (Left) */}
+            <div className="absolute left-0 z-10 w-22 h-34 sm:w-2
+            6 sm:h-38">
+              <TarotCardFlipItem
+                dc={drawnCards[3]}
+                isFlipped={flipped.includes(3)}
+                onClick={() => handleCardClick(3)}
+                themeClass={getThemeClass(drawnCards[3].card.colorTheme)}
+                compact
+              />
+              <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans tracking-tight">4. Behind You</span>
+            </div>
+
+            {/* Position 5: Conscious (Above) */}
+            <div className="absolute top-0 z-10 w-22 h-34 sm:w-26 sm:h-38">
+              <TarotCardFlipItem
+                dc={drawnCards[4]}
+                isFlipped={flipped.includes(4)}
+                onClick={() => handleCardClick(4)}
+                themeClass={getThemeClass(drawnCards[4].card.colorTheme)}
+                compact
+              />
+              <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans tracking-tight">5. Ideals</span>
+            </div>
+
+            {/* Position 6: Immediate Future (Right of core) */}
+            <div className="absolute right-0 z-10 w-22 h-34 sm:w-26 sm:h-38">
+              <TarotCardFlipItem
+                dc={drawnCards[5]}
+                isFlipped={flipped.includes(5)}
+                onClick={() => handleCardClick(5)}
+                themeClass={getThemeClass(drawnCards[5].card.colorTheme)}
+                compact
+              />
+              <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans tracking-tight">6. Before You</span>
+            </div>
+
+          </div>
+
+          {/* Group 2: The Vertical Column Staff (Cards 7, 8, 9, 10 on right side) */}
+          <div className="flex flex-row xl:flex-col items-center justify-center gap-4 xl:gap-2 flex-wrap w-full max-w-[480px] xl:max-w-[124px] xl:border-l xl:border-white/5 xl:pl-6">
+            {[9, 8, 7, 6].map((idx) => {
+              const dc = drawnCards[idx];
+              return (
+                <div key={idx} className="flex flex-col items-center relative w-18 h-28 sm:w-24 sm:h-36">
+                  <TarotCardFlipItem
+                    dc={dc}
+                    isFlipped={flipped.includes(idx)}
+                    onClick={() => handleCardClick(idx)}
+                    themeClass={getThemeClass(dc.card.colorTheme)}
+                    compact
+                  />
+                  <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans font-bold whitespace-nowrap">
+                    {idx + 1}. {spread.positions[idx].name.split(' ')[0]}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      )}
+
+      {/* Selected Card Deep Intuitive Deck Drawer details */}
+      {selectedCardIndex !== null && (
+        <div className="w-full max-w-lg mx-auto px-4 mt-12 animate-fade-in relative z-20">
+          <div className="glass-panel rounded-xl p-6 text-left border border-[#a5e7ff]/20">
+            <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-3">
+              <div>
+                <span className="text-xs text-[#fface8] font-serif font-bold uppercase tracking-widest block">
+                  {spread.positions[selectedCardIndex].name}
+                </span>
+                <h4 className="text-xl font-serif text-[#dfe2f3] font-bold">
+                  {drawnCards[selectedCardIndex].card.name}{' '}
+                  <span className="text-[#a5e7ff] text-xs">
+                    ({drawnCards[selectedCardIndex].isUpright ? 'Upright' : 'Reversed'})
+                  </span>
+                </h4>
+              </div>
+              <div className="w-10 h-14 rounded border border-white/10 bg-white/5 flex items-center justify-center overflow-hidden">
+                <img
+                  src={getTarotImageByName(drawnCards[selectedCardIndex].card.name)}
+                  alt={drawnCards[selectedCardIndex].card.name}
+                  className={`h-full w-full object-contain ${drawnCards[selectedCardIndex].isUpright ? '' : 'rotate-180'}`}
+                />
+              </div>
+            </div>
+
+            <p className="text-[#bbc9cf] text-sm leading-relaxed mb-4">
+              {drawnCards[selectedCardIndex].card.description}
+            </p>
+
+            <div className="space-y-2">
+              <span className="text-xs font-bold text-[#ffdb40] uppercase tracking-wider block">
+                Guidance Keywords:
+              </span>
+              <div className="flex gap-1.5 flex-wrap">
+                {(drawnCards[selectedCardIndex].isUpright 
+                  ? drawnCards[selectedCardIndex].card.uprightKeywords 
+                  : drawnCards[selectedCardIndex].card.reversedKeywords
+                ).map((k, i) => (
+                  <span key={i} className="bg-[#1b1f2c] border border-white/5 text-[#dfe2f3] text-xs rounded-full px-3 py-0.5">
+                    {k}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Actions Bar at the bottom of reveal */}
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-[#0f131f]/90 backdrop-blur-md border-t border-white/5 px-6 py-4 flex gap-4 items-center justify-center z-40">
+        {!allFlipped ? (
+          <button
+            onClick={handleRevealAll}
+            className="px-6 py-3 rounded-full border border-[#a5e7ff]/30 text-[#a5e7ff] hover:bg-[#a5e7ff]/10 active:scale-95 transition-all text-xs font-bold tracking-widest uppercase cursor-pointer"
+          >
+            Reveal All Cards
+          </button>
+        ) : (
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-between">
+            <span className="text-xs text-[#bbc9cf] text-left hidden sm:inline leading-tight max-w-[260px]">
+              All cards drawn and revealed. Query is prepared. Initiate full celestial AI diagnostics inside.
+            </span>
+            <button
+              onClick={handleConsultOracle}
+              disabled={isAiLoading}
+              className={`w-full sm:w-auto px-8 py-3.5 rounded-full font-serif font-bold text-xs ${
+                isAiLoading 
+                  ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700' 
+                  : 'bg-gradient-to-r from-[#fface8] to-[#a5e7ff] text-black hover:opacity-90 active:scale-95 shadow-[0_0_20px_rgba(255,172,232,0.4)] hover:shadow-[0_0_25px_rgba(165,231,255,0.4)] cursor-pointer'
+              } tracking-widest uppercase flex items-center justify-center gap-2`}
+            >
+              {isAiLoading ? (
+                <>
+                  CONSULTING THE ORACLE...
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                </>
+              ) : (
+                <>
+                  ASK THE ORACLE
+                  <ArrowRight className="w-4 h-4 animate-pulse" />
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Embedded loader during consult */}
+      {isAiLoading && (
+        <div className="fixed inset-0 z-50 bg-[#0f131f]/80 backdrop-blur-lg flex flex-col items-center justify-center p-6 text-center">
+          <div className="relative mb-6">
+            <div className="w-16 h-16 rounded-full border-t-2 border-[#fface8] border-r-2 border-[#a5e7ff] animate-spin" />
+            <Sparkles className="w-6 h-6 text-[#ffdb40] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <h3 className="font-serif text-2xl font-bold text-white mb-2 tracking-wider uppercase text-glow">
+            GATHERING THE ETHEREAL CURRENTS
+          </h3>
+          <p className="font-sans text-sm text-[#bbc9cf] max-w-sm">
+            Please sit in brief contemplation while Google Gemini AI analyzes your {spread.name} constellation and shapes your custom spiritual reading...
+          </p>
+        </div>
+      )}
+
+      {/* Error displays */}
+      {aiError && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md glass-panel p-4 rounded-xl border border-red-500/30 flex gap-3 text-left">
+          <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+          <div>
+            <h5 className="font-sans font-bold text-red-300 text-xs uppercase tracking-wide">
+              Divination Disrupted
+            </h5>
+            <p className="font-sans text-xs text-red-200 mt-1">
+              {aiError}
+            </p>
+            <button 
+              onClick={handleConsultOracle}
+              className="text-white underline text-[10px] font-bold mt-2 hover:opacity-80 block"
+            >
+              Retry Consultation
+            </button>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+// Subcomponent: Individual Card Flip Widget
+interface TarotCardFlipItemProps {
+  dc: DrawnCard;
+  isFlipped: boolean;
+  onClick: () => void;
+  themeClass: string;
+  compact?: boolean;
+}
+
+function TarotCardFlipItem({
+  dc,
+  isFlipped,
+  onClick,
+  themeClass,
+  compact = false,
+}: TarotCardFlipItemProps) {
+  const cardImage = getTarotImageByName(dc.card.name);
+
+  return (
+    <div 
+      onClick={onClick}
+      className={`perspective-1000 ${
+        compact 
+          ? 'w-18 h-28 sm:w-22 sm:h-34' 
+          : 'w-48 h-72'
+      } cursor-pointer relative group`}
+    >
+      {/* Plinth shadow directly below */}
+      {!compact && (
+        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-[85%] h-6 bg-[#a5e7ff]/10 rounded-full blur-xl pointer-events-none group-hover:bg-[#a5e7ff]/20 transition-all duration-300" />
+      )}
+
+      <div 
+        className={`card-inner w-full h-full relative preserve-3d shadow-2xl rounded-xl transition-all duration-[900ms] ${
+          isFlipped ? 'rotate-y-180' : ''
+        }`}
+      >
+        {/* Face-down structure */}
+        <div className="absolute inset-0 w-full h-full backface-hidden glass-panel rounded-xl flex items-center justify-center overflow-hidden border border-[#313442] hover:border-[#a5e7ff]/40 transition-colors duration-300">
+          <div className="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#00d2ff] via-[#0f131f] to-transparent" />
+          <div className="w-[90%] h-[92%] border border-white/5 rounded-lg flex flex-col items-center justify-center gap-1">
+            <span className="material-symbols-outlined text-[#a5e7ff]/30 text-2xl group-hover:animate-ping duration-1000" style={{ fontVariationSettings: "'FILL' 1" }}>
+              compost
+            </span>
+            <span className="font-serif text-[7px] tracking-widest text-[#a5e7ff]/30 uppercase font-bold">
+              divination
+            </span>
+          </div>
+        </div>
+
+        {/* Face-up structure */}
+        <div className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-[#1b1f2c] rounded-xl overflow-hidden shadow-2xl border flex flex-col items-center justify-between p-2 sm:p-4 ${themeClass}`}>
+          {/* Bevel details */}
+          <div className="absolute inset-1.5 border border-white/[0.04] rounded-lg pointer-events-none" />
+          
+          <div className="w-full text-left uppercase text-[7px] text-gray-500 font-bold tracking-widest">
+            {dc.card.arcana}
+          </div>
+
+          <div className="flex flex-col items-center justify-center">
+            <img
+              src={cardImage}
+              alt={dc.card.name}
+              className={`${compact ? 'max-h-20' : 'max-h-52'} w-full object-contain transition-transform duration-500 ${
+                dc.isUpright ? '' : 'rotate-180'
+              }`}
+            />
+            {dc.isUpright ? (
+              <span className="text-[6px] tracking-widest font-bold font-sans text-gray-400 mt-1 uppercase">
+                Upright
+              </span>
+            ) : (
+              <span className="text-[6px] tracking-widest font-bold font-sans text-[#fface8] mt-1 uppercase">
+                Reversed
+              </span>
+            )}
+          </div>
+
+          <div className="w-full text-center">
+            <h5 className={`font-serif leading-tight font-bold ${
+              compact ? 'text-[8px]' : 'text-sm'
+            } tracking-wide text-[#dfe2f3]`}>
+              {dc.card.name}
+            </h5>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

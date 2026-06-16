@@ -1,0 +1,6 @@
+{
+  "name": "Tarot Divination",
+  "description": "An enigmatic, premium, and ethereal tarot divination experience powered by Gemini AI. Select your spread, choose your cards, and converse with the Oracle for profound spiritual guidance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

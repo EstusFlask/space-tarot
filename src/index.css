@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-serif: "Literata", Georgia, serif;
+}
+
+/* Glassmorphism and Mystical Utilities */
+.glass-panel {
+  background: rgba(27, 31, 44, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-right: 1px solid rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.42);
+}
+
+.glass-card-hover {
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glass-card-hover:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 15px 40px -5px rgba(0, 210, 255, 0.25), 0 0 20px rgba(165, 231, 255, 0.15) inset;
+  border-top: 1px solid rgba(165, 231, 255, 0.4);
+  border-left: 1px solid rgba(165, 231, 255, 0.4);
+  background: rgba(49, 52, 66, 0.25);
+  backdrop-filter: blur(24px);
+}
+
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  border-radius: inherit;
+  z-index: 10;
+}
+
+.neon-rim-blue {
+  box-shadow: 0 0 12px 0 rgba(165, 231, 255, 0.5), inset 0 0 8px rgba(165, 231, 255, 0.2);
+}
+.neon-rim-gold {
+  box-shadow: 0 0 12px 0 rgba(255, 219, 64, 0.5), inset 0 0 8px rgba(255, 219, 64, 0.2);
+}
+.neon-rim-magenta {
+  box-shadow: 0 0 12px 0 rgba(255, 172, 232, 0.5), inset 0 0 8px rgba(255, 172, 232, 0.2);
+}
+.neon-rim-emerald {
+  box-shadow: 0 0 12px 0 rgba(52, 211, 153, 0.5), inset 0 0 8px rgba(52, 211, 153, 0.2);
+}
+.neon-rim-amber {
+  box-shadow: 0 0 12px 0 rgba(245, 158, 11, 0.5), inset 0 0 8px rgba(245, 158, 11, 0.2);
+}
+
+/* Base style resets */
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background-color: #0f131f;
+  color: #dfe2f3;
+  margin: 0;
+  padding: 0;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Custom Scrollbars */
+.chat-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: rgba(165, 231, 255, 0.3);
+  border-radius: 4px;
+}
+.chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(165, 231, 255, 0.5);
+}
+
+/* 3D card layout */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Nebula canvas pulsing */
+@keyframes pulse-nebula {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.08); opacity: 1; }
+}
+.bg-nebula-pulse {
+  animation: pulse-nebula 10s ease-in-out infinite alternate;
+}
