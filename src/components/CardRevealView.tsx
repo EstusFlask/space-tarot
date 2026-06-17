@@ -3,6 +3,7 @@ import { DrawnCard } from '../types';
 import { getTarotImageByName, TarotSpread } from '../data/tarotCards';
 import { Sparkles, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
+import cardBackImage from '../generated/card_backs/card_back_1.jpg?url';
 
 interface CardRevealViewProps {
   spread: TarotSpread;
@@ -436,7 +437,6 @@ function TarotCardFlipItem({
 }: TarotCardFlipItemProps) {
   const cardImage = getTarotImageByName(dc.card.name);
   const arcanaLabel = getLocalizedArcanaLabel(dc.card, language);
-  const faceDownLabel = UI_COPY[language].cardSelection.faceDownLabel;
 
   return (
     <div
@@ -456,19 +456,15 @@ function TarotCardFlipItem({
         }`}
       >
         {/* Face-down structure */}
-        <div className="absolute inset-0 w-full h-full backface-hidden glass-panel rounded-xl flex items-center justify-center overflow-hidden border border-[#313442] hover:border-[#a5e7ff]/40 transition-colors duration-300">
-          <div className="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#00d2ff] via-[#0f131f] to-transparent" />
-          <div className="w-[90%] h-[92%] border border-white/5 rounded-lg flex flex-col items-center justify-center gap-1">
-            <span
-              className="material-symbols-outlined text-[#a5e7ff]/30 text-2xl group-hover:animate-ping duration-1000"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              compost
-            </span>
-            <span className="font-serif text-[7px] tracking-widest text-[#a5e7ff]/30 uppercase font-bold">
-              {faceDownLabel}
-            </span>
-          </div>
+        <div className="absolute inset-0 w-full h-full backface-hidden glass-panel rounded-xl flex items-center justify-center overflow-hidden border border-[#313442] hover:border-[#a5e7ff]/40 bg-black transition-colors duration-300">
+          <img
+            src={cardBackImage}
+            alt={UI_COPY[language].cardSelection.faceDownLabel}
+            draggable={false}
+            decoding="async"
+            className="h-full w-full object-contain"
+          />
+          <div className="absolute inset-1.5 rounded-lg border border-white/[0.06] pointer-events-none" />
         </div>
 
         {/* Face-up structure */}

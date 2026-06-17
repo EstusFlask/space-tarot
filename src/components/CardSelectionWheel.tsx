@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { TarotCard, TarotSpread, TAROT_DECK } from '../data/tarotCards';
 import { DrawnCard } from '../types';
-import { Sparkles, HelpCircle, PenTool } from 'lucide-react';
+import { Sparkles, PenTool } from 'lucide-react';
 import { cryptoRandomBoolean, cryptoRandomInt, cryptoShuffle } from '../utils/cryptoRandom';
 import { Language, UI_COPY, getLocalizedSpread } from '../data/localization';
+import cardBackImage from '../generated/card_backs/card_back_1.jpg?url';
 
 interface CardSelectionWheelProps {
   spread: TarotSpread;
@@ -19,10 +20,12 @@ interface DrawSelection {
 
 export default function CardSelectionWheel({ spread, onCardsSelected, language }: CardSelectionWheelProps) {
   const [drawn, setDrawn] = useState<DrawSelection[]>([]);
+  const [armedSlotIndex, setArmedSlotIndex] = useState<number | null>(null);
   const [question, setQuestion] = useState('');
   const [deck, setDeck] = useState<TarotCard[]>([]);
   const [availableWheelWidth, setAvailableWheelWidth] = useState(() => (typeof window === 'undefined' ? 560 : window.innerWidth - 48));
   const wheelAreaRef = useRef<HTMLDivElement | null>(null);
+  const lastPointerTypeRef = useRef('');
   const copy = UI_COPY[language].cardSelection;
   const localizedSpread = getLocalizedSpread(spread, language);
   const positionSlots = localizedSpread.positions;
@@ -63,7 +66,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
     setDrawn(prev => prev.filter(item => item.slotIndex !== slotIndex));
   };
 
-  const handleCardClick = (slotIndex: number) => {
+  const drawCardAtSlot = (slotIndex: number) => {
     setDrawn(prev => {
       if (prev.some(item => item.slotIndex === slotIndex)) {
         return prev.filter(item => item.slotIndex !== slotIndex);
@@ -86,6 +89,22 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
         },
       ];
     });
+  };
+
+  const handleCardClick = (slotIndex: number) => {
+    const isTouchSelection = lastPointerTypeRef.current === 'touch';
+
+    if (isTouchSelection) {
+      if (drawn.length >= totalToDraw) return;
+
+      if (armedSlotIndex !== slotIndex) {
+        setArmedSlotIndex(slotIndex);
+        return;
+      }
+    }
+
+    setArmedSlotIndex(null);
+    drawCardAtSlot(slotIndex);
   };
 
   const handleConfirm = () => {
@@ -251,19 +270,23 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
 
             // Check if this visual slot has been drawn or selected
             const isSelected = drawn.some(item => item.slotIndex === i);
+            const isRaised = !isSelected && armedSlotIndex === i;
 
             // Dynamically calculate z-index based on the card's vertical height (y coordinate)
             // This ensures that cards higher up perfectly overlap cards further down,
             // creating a continuous, seamless circular overlap fan without any abrupt breakpoint.
-            const itemZIndex = isSelected ? 5 : Math.round(((radius - y) / radius) * 100) + 12;
+            const itemZIndex = isSelected ? 5 : isRaised ? 300 : Math.round(((radius - y) / radius) * 100) + 12;
 
             return (
               <div
                 key={i}
+                onPointerDown={(event) => {
+                  lastPointerTypeRef.current = event.pointerType;
+                }}
                 onClick={() => handleCardClick(i)}
                 style={{
                   position: 'absolute',
-                  transform: `translate(${x}px, ${y}px) rotate(${rotationDeg}deg)`,
+                  transform: `translate(${x}px, ${isRaised ? y - 8 : y}px) rotate(${rotationDeg}deg)`,
                   transition: 'all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1)',
                   zIndex: itemZIndex,
                   opacity: isSelected ? 0.0 : 1, // Make it completely disappear from the wheel upon draw
@@ -275,14 +298,21 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
                 className={`rounded border ${
                   isSelected
                     ? 'border-gray-800 bg-gray-900/10'
-                    : 'border-[#a5e7ff]/30 hover:border-[#a5e7ff] bg-[#1b1f2c]/85 hover:-translate-y-2'
-                } backdrop-blur-xs flex items-center justify-center cursor-pointer shadow-[0_4px_10px_rgba(0,0,0,0.4)] transition-all`}
+                    : isRaised
+                      ? 'border-[#a5e7ff] bg-[#1b1f2c]/90'
+                      : 'border-[#a5e7ff]/30 hover:border-[#a5e7ff] bg-[#1b1f2c]/85 hover:-translate-y-2'
+                } tarot-wheel-card backdrop-blur-xs flex items-center justify-center cursor-pointer shadow-[0_4px_10px_rgba(0,0,0,0.4)] transition-all`}
               >
                 {!isSelected && (
                   <div className="w-full h-full p-0.5 pointer-events-none">
-                    <div className="w-full h-full rounded border border-white/5 bg-gradient-to-b from-[#a5e7ff]/5 via-transparent to-[#fface8]/5 flex items-center justify-center">
-                      <HelpCircle className="w-4 h-4 text-[#a5e7ff]/25 animate-pulse" />
-                    </div>
+                    <img
+                      src={cardBackImage}
+                      alt=""
+                      aria-hidden="true"
+                      draggable={false}
+                      decoding="async"
+                      className="w-full h-full rounded object-cover border border-white/10"
+                    />
                   </div>
                 )}
               </div>
