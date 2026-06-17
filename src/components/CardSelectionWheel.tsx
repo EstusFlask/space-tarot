@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TarotCard, TarotSpread, TAROT_DECK } from '../data/tarotCards';
 import { DrawnCard } from '../types';
 import { Sparkles, HelpCircle, PenTool } from 'lucide-react';
@@ -21,6 +21,8 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
   const [drawn, setDrawn] = useState<DrawSelection[]>([]);
   const [question, setQuestion] = useState('');
   const [deck, setDeck] = useState<TarotCard[]>([]);
+  const [availableWheelWidth, setAvailableWheelWidth] = useState(() => (typeof window === 'undefined' ? 560 : window.innerWidth - 48));
+  const wheelAreaRef = useRef<HTMLDivElement | null>(null);
   const copy = UI_COPY[language].cardSelection;
   const localizedSpread = getLocalizedSpread(spread, language);
   const positionSlots = localizedSpread.positions;
@@ -29,8 +31,33 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
     setDeck(cryptoShuffle(TAROT_DECK));
   }, []);
 
+  useEffect(() => {
+    const updateAvailableWidth = () => {
+      setAvailableWheelWidth(wheelAreaRef.current?.clientWidth ?? window.innerWidth - 48);
+    };
+
+    updateAvailableWidth();
+
+    const observer = new ResizeObserver(updateAvailableWidth);
+    const wheelArea = wheelAreaRef.current;
+
+    if (wheelArea) {
+      observer.observe(wheelArea);
+    }
+
+    window.addEventListener('resize', updateAvailableWidth);
+    window.visualViewport?.addEventListener('resize', updateAvailableWidth);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateAvailableWidth);
+      window.visualViewport?.removeEventListener('resize', updateAvailableWidth);
+    };
+  }, []);
+
   const totalToDraw = spread.cardCount;
   const currentDrawIndex = drawn.length;
+  const isSelectionComplete = drawn.length >= totalToDraw;
 
   const handleRemoveDrawnCard = (slotIndex: number) => {
     setDrawn(prev => prev.filter(item => item.slotIndex !== slotIndex));
@@ -62,7 +89,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
   };
 
   const handleConfirm = () => {
-    if (drawn.length < totalToDraw) return;
+    if (!isSelectionComplete) return;
 
     const result: DrawnCard[] = drawn.map((selection, i) => {
       const positionInfo = positionSlots[i];
@@ -83,7 +110,13 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
 
   // Generate coordinates for fanned circle (exactly 78 visible cards mapping to a full Tarot deck)
   const totalCardsInWheel = 78;
-  const radius = 240; // Pixels
+  const wheelOuterDiameter = Math.min(560, Math.max(272, availableWheelWidth));
+  const cardHeight = Math.round(Math.min(80, Math.max(60, wheelOuterDiameter * (80 / 560))));
+  const cardWidth = Math.round(cardHeight * 0.6);
+  const radius = Math.round((wheelOuterDiameter - cardHeight) / 2);
+  const wheelDiameter = radius * 2;
+  const wheelFrameHeight = wheelOuterDiameter + 24;
+  const centerCounterSize = Math.round(Math.min(128, Math.max(92, wheelOuterDiameter * 0.28)));
 
   return (
     <div className="w-full flex flex-col items-center justify-start min-h-[calc(100vh-80px)] pt-20 pb-20 text-center relative overflow-hidden">
@@ -182,12 +215,22 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
       </div>
 
       {/* Floating Circle Tarot deck - Taller container height and extra margins to avoid overlap */}
-      <div className="relative w-full h-[580px] my-10 flex items-center justify-center z-10 select-none">
+      <div
+        ref={wheelAreaRef}
+        className="relative w-full my-8 md:my-10 flex items-center justify-center z-10 select-none"
+        style={{ height: `${wheelFrameHeight}px` }}
+      >
         {/* Subtle center ambient light source */}
-        <div className="absolute w-80 h-80 rounded-full bg-[radial-gradient(circle,_rgba(165,231,255,0.08)_0%,_transparent_75%)] pointer-events-none blur-3xl" />
+        <div
+          className="absolute rounded-full bg-[radial-gradient(circle,_rgba(165,231,255,0.08)_0%,_transparent_75%)] pointer-events-none blur-3xl"
+          style={{ width: `${wheelDiameter * 0.64}px`, height: `${wheelDiameter * 0.64}px` }}
+        />
 
         {/* Drawn Counter Indicator */}
-        <div className="absolute z-20 flex flex-col items-center justify-center bg-[#1b1f2c]/75 backdrop-blur-md rounded-full w-32 h-32 border border-[#a5e7ff]/20 shadow-2xl">
+        <div
+          className="absolute z-20 flex flex-col items-center justify-center bg-[#1b1f2c]/75 backdrop-blur-md rounded-full border border-[#a5e7ff]/20 shadow-2xl"
+          style={{ width: `${centerCounterSize}px`, height: `${centerCounterSize}px` }}
+        >
           <span className="font-serif text-3xl font-bold text-[#fface8]">{drawn.length}</span>
           <span className="text-[10px] font-sans font-bold tracking-widest text-[#bbc9cf] uppercase">
             {language === 'zh' ? `已抽 ${drawn.length}/${totalToDraw}` : `of ${totalToDraw} drawn`}
@@ -196,7 +239,10 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
         </div>
 
         {/* Dynamic fan card wheel */}
-        <div className="relative w-[500px] h-[500px] flex items-center justify-center">
+        <div
+          className="relative flex items-center justify-center"
+          style={{ width: `${wheelDiameter}px`, height: `${wheelDiameter}px` }}
+        >
           {Array.from({ length: totalCardsInWheel }).map((_, i) => {
             const angle = (i / totalCardsInWheel) * 2 * Math.PI;
             const x = radius * Math.cos(angle);
@@ -223,8 +269,10 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
                   opacity: isSelected ? 0.0 : 1, // Make it completely disappear from the wheel upon draw
                   transformOrigin: 'center center',
                   pointerEvents: isSelected ? 'none' : 'auto',
+                  width: `${cardWidth}px`,
+                  height: `${cardHeight}px`,
                 }}
-                className={`w-12 h-20 rounded border ${
+                className={`rounded border ${
                   isSelected
                     ? 'border-gray-800 bg-gray-900/10'
                     : 'border-[#a5e7ff]/30 hover:border-[#a5e7ff] bg-[#1b1f2c]/85 hover:-translate-y-2'
@@ -245,7 +293,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
 
       {/* Confirmation Actions - Pushed down with extra mt and bottom padding to avoid any overlap */}
       <div className="relative z-30 mt-10 pb-12 w-full px-4 flex justify-center">
-        {drawn.length >= totalToDraw ? (
+        {isSelectionComplete ? (
           <button
             onClick={handleConfirm}
             className="w-full max-w-sm py-4 rounded-full font-serif font-bold text-lg text-black bg-[#a5e7ff] hover:bg-[#b6ebff] active:scale-95 transition-all shadow-[0_0_20px_rgba(165,231,255,0.5)] cursor-pointer tracking-wider flex items-center justify-center gap-2"
