@@ -1,4 +1,4 @@
-# Tarot Divination
+# Space Tarot | 星空塔罗
 
 ## 本地运行
 
