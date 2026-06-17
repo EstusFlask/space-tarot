@@ -1,12 +1,14 @@
 import { TarotScreen } from '../types';
-import { Home, Sparkles, History, RotateCcw, Settings } from 'lucide-react';
+import { Home, Sparkles, Download, RotateCcw, Settings, RefreshCw } from 'lucide-react';
 import { Language, UI_COPY } from '../data/localization';
 
 interface HeaderProps {
   currentScreen: TarotScreen;
   onNavigateHome: () => void;
   onResetReading?: () => void;
-  onShowHistory?: () => void;
+  onSaveReading: () => void | Promise<boolean>;
+  canSaveReading: boolean;
+  isSavingReading: boolean;
   onOpenAISettings: () => void;
   language: Language;
   onToggleLanguage: () => void;
@@ -16,12 +18,19 @@ export default function Header({
   currentScreen,
   onNavigateHome,
   onResetReading,
-  onShowHistory,
+  onSaveReading,
+  canSaveReading,
+  isSavingReading,
   onOpenAISettings,
   language,
   onToggleLanguage,
 }: HeaderProps) {
   const copy = UI_COPY[language].header;
+  const saveTitle = isSavingReading
+    ? copy.savingTitle
+    : canSaveReading
+      ? copy.saveTitle
+      : copy.saveDisabledTitle;
 
   return (
     <header className="fixed top-0 w-full z-50 bg-[#0f131f]/40 backdrop-blur-xl border-b border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] flex justify-between items-center px-6 h-16 transition-all duration-300">
@@ -67,15 +76,18 @@ export default function Header({
         >
           {copy.languageLabel}
         </button>
-        {onShowHistory && (
-          <button
-            onClick={onShowHistory}
-            title={copy.historyTitle}
-            className="text-[#bbc9cf] hover:text-[#a5e7ff] transition-colors active:scale-95 duration-200 cursor-pointer p-1"
-          >
-            <History className="w-5 h-5" />
-          </button>
-        )}
+        <button
+          onClick={onSaveReading}
+          disabled={!canSaveReading || isSavingReading}
+          title={saveTitle}
+          className={`p-1 transition-colors active:scale-95 duration-200 ${
+            canSaveReading && !isSavingReading
+              ? 'text-[#bbc9cf] hover:text-[#a5e7ff] cursor-pointer'
+              : 'text-[#bbc9cf]/35 cursor-not-allowed'
+          }`}
+        >
+          {isSavingReading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+        </button>
         <button
           onClick={onOpenAISettings}
           title={copy.aiSettingsTitle}

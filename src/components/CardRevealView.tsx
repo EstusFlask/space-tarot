@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DrawnCard } from '../types';
 import { getLocalizedCardName, getTarotImageByName, TarotSpread } from '../data/tarotCards';
 import { Sparkles, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
@@ -6,6 +6,7 @@ import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '
 import cardBackImage from '../generated/card_backs/card_back_6.webp?url';
 import QuestionPromptDialog from './QuestionPromptDialog';
 import RetryingImage from './RetryingImage';
+import ViewportPortal from './ViewportPortal';
 import type { AISettings } from '../utils/aiSettings';
 import { hasAIKey } from '../utils/aiSettings';
 import { requestTarotInterpretation } from '../utils/glmClient';
@@ -18,6 +19,7 @@ interface CardRevealViewProps {
   language: Language;
   aiSettings: AISettings;
   onOpenAISettings: () => void;
+  onRevealStatusChange: (allCardsRevealed: boolean) => void;
 }
 
 export default function CardRevealView({
@@ -28,6 +30,7 @@ export default function CardRevealView({
   language,
   aiSettings,
   onOpenAISettings,
+  onRevealStatusChange,
 }: CardRevealViewProps) {
   const [flipped, setFlipped] = useState<number[]>([]);
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
@@ -139,9 +142,13 @@ export default function CardRevealView({
     }
   };
 
-  const allFlipped = flipped.length === drawnCards.length;
+  const allFlipped = drawnCards.length > 0 && flipped.length === drawnCards.length;
   const selectedCard = selectedCardIndex !== null ? drawnCards[selectedCardIndex].card : null;
   const selectedCardName = selectedCard ? getLocalizedCardName(selectedCard.name, language) : '';
+
+  useEffect(() => {
+    onRevealStatusChange(allFlipped);
+  }, [allFlipped, onRevealStatusChange]);
 
   const getPositionHeading = (index: number) => {
     const position = localizedSpread.positions[drawnCards[index]?.positionIndex ?? index];
@@ -381,7 +388,9 @@ export default function CardRevealView({
       )}
 
       {/* Global Actions Bar at the bottom of reveal */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-[#0f131f]/90 backdrop-blur-md border-t border-white/5 px-6 py-4 flex gap-4 items-center justify-center z-40">
+      <ViewportPortal>
+        <div className="fixed inset-x-0 bottom-0 z-40 w-full border-t border-white/5 bg-[#0f131f]/90 px-4 py-4 backdrop-blur-md">
+          <div className="mx-auto flex w-full max-w-2xl items-center justify-center gap-4">
         {!allFlipped ? (
           <button
             onClick={handleRevealAll}
@@ -417,41 +426,47 @@ export default function CardRevealView({
             </button>
           </div>
         )}
-      </div>
+          </div>
+        </div>
+      </ViewportPortal>
 
       {/* Embedded loader during consult */}
       {isAiLoading && (
-        <div className="fixed inset-0 z-50 bg-[#0f131f]/80 backdrop-blur-lg flex flex-col items-center justify-center p-6 text-center">
-          <div className="relative mb-6">
-            <div className="w-16 h-16 rounded-full border-t-2 border-[#fface8] border-r-2 border-[#a5e7ff] animate-spin" />
-            <Sparkles className="w-6 h-6 text-[#ffdb40] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+        <ViewportPortal>
+          <div className="fixed inset-0 z-[80] bg-[#0f131f]/80 backdrop-blur-lg flex flex-col items-center justify-center p-6 text-center">
+            <div className="relative mb-6">
+              <div className="w-16 h-16 rounded-full border-t-2 border-[#fface8] border-r-2 border-[#a5e7ff] animate-spin" />
+              <Sparkles className="w-6 h-6 text-[#ffdb40] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+            </div>
+            <h3 className="font-serif text-2xl font-bold text-white mb-2 tracking-wider uppercase text-glow">
+              {copy.loadingTitle}
+            </h3>
+            <p className="font-sans text-sm text-[#bbc9cf] max-w-sm">
+              {copy.loadingBody(localizedSpread.name)}
+            </p>
           </div>
-          <h3 className="font-serif text-2xl font-bold text-white mb-2 tracking-wider uppercase text-glow">
-            {copy.loadingTitle}
-          </h3>
-          <p className="font-sans text-sm text-[#bbc9cf] max-w-sm">
-            {copy.loadingBody(localizedSpread.name)}
-          </p>
-        </div>
+        </ViewportPortal>
       )}
 
       {/* Error displays */}
       {aiError && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md glass-panel p-4 rounded-xl border border-red-500/30 flex gap-3 text-left">
-          <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-          <div>
-            <h5 className="font-sans font-bold text-red-300 text-xs uppercase tracking-wide">
-              {copy.errorTitle}
-            </h5>
-            <p className="font-sans text-xs text-red-200 mt-1">{aiError}</p>
-            <button
-              onClick={handleConsultOracle}
-              className="text-white underline text-[10px] font-bold mt-2 hover:opacity-80 block"
-            >
-              {copy.retry}
-            </button>
+        <ViewportPortal>
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] w-[90%] max-w-md glass-panel p-4 rounded-xl border border-red-500/30 flex gap-3 text-left">
+            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+            <div>
+              <h5 className="font-sans font-bold text-red-300 text-xs uppercase tracking-wide">
+                {copy.errorTitle}
+              </h5>
+              <p className="font-sans text-xs text-red-200 mt-1">{aiError}</p>
+              <button
+                onClick={handleConsultOracle}
+                className="text-white underline text-[10px] font-bold mt-2 hover:opacity-80 block"
+              >
+                {copy.retry}
+              </button>
+            </div>
           </div>
-        </div>
+        </ViewportPortal>
       )}
 
       <QuestionPromptDialog

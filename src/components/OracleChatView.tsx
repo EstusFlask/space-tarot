@@ -2,11 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, DrawnCard } from '../types';
 import { getLocalizedCardName, TarotSpread } from '../data/tarotCards';
 import ReactMarkdown from 'react-markdown';
-import { Send, Sparkles, Save, CheckCircle, RefreshCw } from 'lucide-react';
+import { Send, Sparkles, Download, CheckCircle, RefreshCw } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
 import type { AISettings } from '../utils/aiSettings';
 import { hasAIKey } from '../utils/aiSettings';
 import { requestTarotInterpretation } from '../utils/glmClient';
+import ViewportPortal from './ViewportPortal';
 
 interface OracleChatViewProps {
   spread: TarotSpread;
@@ -17,6 +18,9 @@ interface OracleChatViewProps {
   language: Language;
   aiSettings: AISettings;
   onOpenAISettings: () => void;
+  onMessagesChange: (messages: ChatMessage[]) => void;
+  onSaveReading: () => Promise<boolean> | boolean;
+  isSavingReading: boolean;
 }
 
 export default function OracleChatView({
@@ -28,6 +32,9 @@ export default function OracleChatView({
   language,
   aiSettings,
   onOpenAISettings,
+  onMessagesChange,
+  onSaveReading,
+  isSavingReading,
 }: OracleChatViewProps) {
   const copy = UI_COPY[language].oracleChat;
   const commonCopy = UI_COPY[language].common;
@@ -58,7 +65,12 @@ export default function OracleChatView({
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    onMessagesChange(messages);
+  }, [messages, onMessagesChange]);
 
   // Auto-scroll to the latest message
   useEffect(() => {
@@ -136,30 +148,21 @@ export default function OracleChatView({
     }
   };
 
-  const handleSaveReading = () => {
+  const handleSaveReading = async () => {
+    if (isLoading || isSavingSnapshot || isSavingReading || isSaved) return;
+
+    setIsSavingSnapshot(true);
+
     try {
-      const savedReadingsRaw = localStorage.getItem('tarot_readings_archive');
-      const archive = savedReadingsRaw ? JSON.parse(savedReadingsRaw) : [];
+      const didSave = await onSaveReading();
+      if (!didSave) return;
 
-      const newEntry = {
-        id: `reading-${Date.now()}`,
-        date: new Date().toLocaleDateString(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        spreadName: localizedSpread.name,
-        question: question || (language === 'zh' ? '通用校准' : 'General Alignment'),
-        cards: drawnCards.map(dc => ({
-          name: dc.card.name,
-          position: localizedSpread.positions[dc.positionIndex]?.name ?? dc.positionName,
-          isUpright: dc.isUpright,
-        })),
-        summary: messages[0].text,
-      };
-
-      localStorage.setItem('tarot_readings_archive', JSON.stringify([newEntry, ...archive]));
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 2500);
     } catch (e) {
-      console.error('Failed to save reading:', e);
+      console.error('Failed to save reading snapshot:', e);
+    } finally {
+      setIsSavingSnapshot(false);
     }
   };
 
@@ -188,10 +191,12 @@ export default function OracleChatView({
         <div className="flex items-center gap-2 relative z-20 w-full md:w-auto shrink-0 justify-end">
           <button
             onClick={handleSaveReading}
-            disabled={isSaved}
+            disabled={isLoading || isSavingSnapshot || isSavingReading || isSaved}
             className={`px-4 py-2 rounded-full border text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 transition-all ${
               isSaved
                 ? 'bg-emerald-400/20 border-emerald-400/50 text-emerald-300'
+                : isLoading || isSavingSnapshot || isSavingReading
+                  ? 'border-white/10 text-[#bbc9cf]/40 cursor-not-allowed'
                 : 'border-white/10 text-[#bbc9cf] hover:text-white hover:bg-white/5 cursor-pointer'
             }`}
           >
@@ -202,7 +207,11 @@ export default function OracleChatView({
               </>
             ) : (
               <>
-                <Save className="w-3.5 h-3.5" />
+                {isSavingSnapshot || isSavingReading ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
                 {copy.archiveReading}
               </>
             )}
@@ -323,7 +332,9 @@ export default function OracleChatView({
       </div>
 
       {/* Input chat tray at the bottom */}
-      <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#0f131f] via-[#0f131f]/95 to-transparent pt-6 pb-4 px-4 z-20 shrink-0">
+      <ViewportPortal>
+        <div className="fixed inset-x-0 bottom-0 z-40 w-full bg-gradient-to-t from-[#0f131f] via-[#0f131f]/95 to-transparent px-4 pb-4 pt-6 shrink-0">
+          <div className="mx-auto w-full max-w-4xl">
         {/* Quick prompt guides */}
         <div className="flex gap-2.5 justify-center flex-wrap mb-4">
           {quickPrompts.map((p, i) => (
@@ -369,7 +380,9 @@ export default function OracleChatView({
             </button>
           </div>
         </form>
-      </div>
+          </div>
+        </div>
+      </ViewportPortal>
     </div>
   );
 }

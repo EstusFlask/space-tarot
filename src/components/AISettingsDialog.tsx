@@ -5,6 +5,7 @@ import type { Language } from '../data/localization';
 import { UI_COPY } from '../data/localization';
 import type { AISettings } from '../utils/aiSettings';
 import { DEFAULT_GLM_MODEL } from '../utils/aiSettings';
+import ViewportPortal from './ViewportPortal';
 
 interface AISettingsDialogProps {
   open: boolean;
@@ -44,24 +45,25 @@ export default function AISettingsDialog({
   };
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="fixed inset-0 z-[90] flex items-center justify-center px-4 py-6 bg-[#0f131f]/75 backdrop-blur-lg"
-          initial={shouldReduceMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
-        >
-          <motion.form
-            onSubmit={handleSubmit}
-            className="glass-panel relative w-full max-w-md overflow-hidden rounded-2xl border border-[#a5e7ff]/20 p-5 text-left shadow-[0_0_40px_rgba(165,231,255,0.12)]"
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 18, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.98 }}
-            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+    <ViewportPortal>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="fixed inset-0 z-[90] flex items-center justify-center px-4 py-6 bg-[#0f131f]/75 backdrop-blur-lg"
+            initial={shouldReduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
           >
-            <div className="noise-overlay" />
+            <motion.form
+              onSubmit={handleSubmit}
+              className="glass-panel relative w-full max-w-md overflow-hidden rounded-2xl border border-[#a5e7ff]/20 p-5 text-left shadow-[0_0_40px_rgba(165,231,255,0.12)]"
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 18, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <div className="noise-overlay" />
 
             <div className="relative z-20 mb-5 flex items-center gap-3 border-b border-white/10 pb-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#a5e7ff]/30 bg-[#a5e7ff]/10 text-[#a5e7ff]">
@@ -147,9 +149,10 @@ export default function AISettingsDialog({
                 {copy.save}
               </button>
             </div>
-          </motion.form>
-        </motion.div>
-      )}
-    </AnimatePresence>
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </ViewportPortal>
   );
 }

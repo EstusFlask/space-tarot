@@ -3,6 +3,7 @@ import { X, Calendar, BookOpen, Trash2, ShieldAlert } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { getLocalizedCardName } from '../data/tarotCards';
 import { Language, UI_COPY } from '../data/localization';
+import ViewportPortal from './ViewportPortal';
 
 interface ReadingsArchiveProps {
   onClose: () => void;
@@ -37,8 +38,9 @@ export default function ReadingsArchive({ onClose, language }: ReadingsArchivePr
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#0f131f]/90 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="relative glass-panel rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-fade-in">
+    <ViewportPortal>
+      <div className="fixed inset-0 z-[100] bg-[#0f131f]/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="relative glass-panel rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-fade-in">
         <div className="noise-overlay" />
 
         {/* Header */}
@@ -149,7 +151,8 @@ export default function ReadingsArchive({ onClose, language }: ReadingsArchivePr
             </button>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </ViewportPortal>
   );
 }

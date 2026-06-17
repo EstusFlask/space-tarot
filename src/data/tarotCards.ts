@@ -87,6 +87,12 @@ const tarotImageModules = import.meta.glob<string>('../../images/tarots/*.png', 
   query: '?url',
 });
 
+const tarotSnapshotImageModules = import.meta.glob<string>('../generated/tarots/*.webp', {
+  eager: true,
+  import: 'default',
+  query: '?url',
+});
+
 const MAJOR_ARCANA_ORDER = [
   'The Fool',
   'The Magician',
@@ -297,6 +303,14 @@ export const TAROT_IMAGE_BY_NAME: Record<string, string> = Object.fromEntries(
   TAROT_DECK.map(card => [card.name, card.imageSrc]),
 );
 
+export const TAROT_SNAPSHOT_IMAGE_BY_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(tarotSnapshotImageModules).map(([imagePath, imageSrc]) => [imagePathToName(imagePath), imageSrc]),
+);
+
 export function getTarotImageByName(name: string): string {
   return TAROT_IMAGE_BY_NAME[name] ?? '';
+}
+
+export function getTarotSnapshotImageByName(name: string): string {
+  return TAROT_SNAPSHOT_IMAGE_BY_NAME[name] ?? getTarotImageByName(name);
 }
