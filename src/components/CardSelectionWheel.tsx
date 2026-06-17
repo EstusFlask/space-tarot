@@ -4,7 +4,7 @@ import { DrawnCard } from '../types';
 import { Sparkles, PenTool } from 'lucide-react';
 import { cryptoRandomBoolean, cryptoRandomInt, cryptoShuffle } from '../utils/cryptoRandom';
 import { Language, UI_COPY, getLocalizedSpread } from '../data/localization';
-import cardBackImage from '../generated/card_backs/card_back_1.jpg?url';
+import cardBackImage from '../generated/card_backs/card_back_6.webp?url';
 
 interface CardSelectionWheelProps {
   spread: TarotSpread;
@@ -131,7 +131,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
   const totalCardsInWheel = 78;
   const wheelOuterDiameter = Math.min(560, Math.max(272, availableWheelWidth));
   const cardHeight = Math.round(Math.min(80, Math.max(60, wheelOuterDiameter * (80 / 560))));
-  const cardWidth = Math.round(cardHeight * 0.6);
+  const cardWidth = Math.round(cardHeight * (2 / 3));
   const radius = Math.round((wheelOuterDiameter - cardHeight) / 2);
   const wheelDiameter = radius * 2;
   const wheelFrameHeight = wheelOuterDiameter + 24;
@@ -311,7 +311,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
                       aria-hidden="true"
                       draggable={false}
                       decoding="async"
-                      className="w-full h-full rounded object-cover border border-white/10"
+                      className="w-full h-full rounded object-contain"
                     />
                   </div>
                 )}

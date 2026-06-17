@@ -3,7 +3,7 @@ import { DrawnCard } from '../types';
 import { getTarotImageByName, TarotSpread } from '../data/tarotCards';
 import { Sparkles, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
-import cardBackImage from '../generated/card_backs/card_back_1.jpg?url';
+import cardBackImage from '../generated/card_backs/card_back_6.webp?url';
 
 interface CardRevealViewProps {
   spread: TarotSpread;
@@ -456,7 +456,7 @@ function TarotCardFlipItem({
         }`}
       >
         {/* Face-down structure */}
-        <div className="absolute inset-0 w-full h-full backface-hidden glass-panel rounded-xl flex items-center justify-center overflow-hidden border border-[#313442] hover:border-[#a5e7ff]/40 bg-black transition-colors duration-300">
+        <div className="absolute inset-0 w-full h-full backface-hidden rounded-xl flex items-center justify-center overflow-hidden bg-transparent transition-[filter] duration-300 group-hover:drop-shadow-[0_0_14px_rgba(165,231,255,0.35)]">
           <img
             src={cardBackImage}
             alt={UI_COPY[language].cardSelection.faceDownLabel}
@@ -464,7 +464,6 @@ function TarotCardFlipItem({
             decoding="async"
             className="h-full w-full object-contain"
           />
-          <div className="absolute inset-1.5 rounded-lg border border-white/[0.06] pointer-events-none" />
         </div>
 
         {/* Face-up structure */}
