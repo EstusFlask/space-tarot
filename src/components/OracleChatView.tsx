@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, DrawnCard } from '../types';
-import { TarotSpread } from '../data/tarotCards';
+import { getLocalizedCardName, TarotSpread } from '../data/tarotCards';
 import ReactMarkdown from 'react-markdown';
 import { Send, Sparkles, Save, CheckCircle, RefreshCw } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
@@ -25,6 +25,21 @@ export default function OracleChatView({
   const copy = UI_COPY[language].oracleChat;
   const commonCopy = UI_COPY[language].common;
   const localizedSpread = getLocalizedSpread(spread, language);
+  const localizeKeyword = (keyword: string, cardName: string) => {
+    if (keyword === cardName) {
+      return getLocalizedCardName(cardName, language);
+    }
+
+    if (keyword === 'Upright') {
+      return commonCopy.upright;
+    }
+
+    if (keyword === 'Reversed') {
+      return commonCopy.reversed;
+    }
+
+    return keyword;
+  };
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'init-oracle',
@@ -70,10 +85,11 @@ export default function OracleChatView({
         language,
         cardsDrawn: drawnCards.map(dc => ({
           name: dc.card.name,
+          displayName: getLocalizedCardName(dc.card.name, language),
           positionName: localizedSpread.positions[dc.positionIndex]?.name ?? dc.positionName,
           isUpright: dc.isUpright,
           keywords: (dc.isUpright ? dc.card.uprightKeywords : dc.card.reversedKeywords).map(k =>
-            k === 'Upright' ? commonCopy.upright : k === 'Reversed' ? commonCopy.reversed : k,
+            localizeKeyword(k, dc.card.name),
           ),
           arcana: getLocalizedArcanaLabel(dc.card, language),
           description: dc.card.description,
@@ -212,7 +228,7 @@ export default function OracleChatView({
                   {localizedSpread.positions[i]?.name ?? dc.positionName}
                 </span>
                 <span className="text-[11px] font-medium text-[#dfe2f3] leading-none">
-                  {dc.card.name}{' '}
+                  {getLocalizedCardName(dc.card.name, language)}{' '}
                   <span className="text-[9px] text-[#fface8]">{dc.isUpright ? '' : commonCopy.reversed}</span>
                 </span>
               </div>

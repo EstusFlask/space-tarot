@@ -2,6 +2,7 @@ import {
   CARD_DESCRIPTIONS,
   DESCRIPTION_PLACEHOLDER,
 } from './cardDescriptions';
+import type { Language } from './localization';
 
 export type CardOrientation = 'upright' | 'reversed';
 export type CardColorTheme = 'cyan' | 'magenta' | 'gold' | 'emerald' | 'amber';
@@ -141,6 +142,56 @@ const SUIT_DETAILS: Record<
   pentacles: { arcana: 'Suit of Pentacles', colorTheme: 'emerald', iconName: 'Coins' },
 };
 
+const MAJOR_ARCANA_ZH: Record<string, string> = {
+  'The Fool': '愚者',
+  'The Magician': '魔术师',
+  'The High Priestess': '女祭司',
+  'The Empress': '女皇',
+  'The Emperor': '皇帝',
+  'The Hierophant': '教皇',
+  'The Lovers': '恋人',
+  'The Chariot': '战车',
+  'Strength': '力量',
+  'The Hermit': '隐者',
+  'Wheel of Fortune': '命运之轮',
+  'Justice': '正义',
+  'The Hanged Man': '倒吊人',
+  'Death': '死神',
+  'Temperance': '节制',
+  'The Devil': '恶魔',
+  'The Tower': '高塔',
+  'The Star': '星星',
+  'The Moon': '月亮',
+  'The Sun': '太阳',
+  'Judgement': '审判',
+  'The World': '世界',
+};
+
+const SUIT_ZH: Record<NonNullable<TarotCard['suit']>, string> = {
+  wands: '权杖',
+  cups: '圣杯',
+  swords: '宝剑',
+  pentacles: '星币',
+};
+
+const MINOR_RANK_ZH: Record<string, string> = {
+  Ace: '首牌',
+  One: '首牌',
+  Two: '二',
+  Three: '三',
+  Four: '四',
+  Five: '五',
+  Six: '六',
+  Seven: '七',
+  Eight: '八',
+  Nine: '九',
+  Ten: '十',
+  Page: '侍者',
+  Knight: '骑士',
+  Queen: '王后',
+  King: '国王',
+};
+
 function imagePathToName(imagePath: string): string {
   const filename = imagePath.split('/').pop() ?? imagePath;
   return filename.replace(/\.[^.]+$/, '').replace(/_/g, ' ');
@@ -161,6 +212,24 @@ function parseMinorCard(name: string) {
     suit,
     number: RANK_VALUES[rank] ?? 0,
   };
+}
+
+export function getLocalizedCardName(name: string, language: Language): string {
+  if (language === 'en') {
+    return name;
+  }
+
+  const majorName = MAJOR_ARCANA_ZH[name];
+  if (majorName) {
+    return majorName;
+  }
+
+  const minor = parseMinorCard(name);
+  if (minor) {
+    return `${SUIT_ZH[minor.suit]}${MINOR_RANK_ZH[minor.rank] ?? minor.rank}`;
+  }
+
+  return name;
 }
 
 function getDeckSortIndex(name: string): number {

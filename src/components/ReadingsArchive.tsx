@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Calendar, BookOpen, Trash2, ShieldAlert } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { getLocalizedCardName } from '../data/tarotCards';
 import { Language, UI_COPY } from '../data/localization';
 
 interface ReadingsArchiveProps {
@@ -97,7 +98,7 @@ export default function ReadingsArchive({ onClose, language }: ReadingsArchivePr
                         key={index}
                         className="text-[10px] bg-[#0f131f] text-[#bbc9cf] border border-white/[0.02] rounded px-2 py-0.5"
                       >
-                        {c.position}: <strong className="text-white">{c.name}</strong>{' '}
+                        {c.position}: <strong className="text-white">{c.displayName ?? getLocalizedCardName(c.name, language)}</strong>{' '}
                         {c.isUpright ? '' : UI_COPY[language].common.reversed}
                       </span>
                     ))}

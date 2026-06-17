@@ -84,7 +84,9 @@ app.post('/api/interpret-tarot', async (req, res) => {
 
     const cardsDesc = cardsDrawn
       .map((c: any, index: number) => {
-        return `${copy.position} ${index + 1} (${c.positionName}): ${c.name} (${c.isUpright ? copy.upright : copy.reversed})
+        const cardName = c.displayName ?? c.name;
+
+        return `${copy.position} ${index + 1} (${c.positionName}): ${cardName} (${c.isUpright ? copy.upright : copy.reversed})
 ${copy.keywords}: ${c.keywords.join(', ')}
 ${copy.arcana}: ${c.arcana}
 ${copy.essence}: ${c.description}`;

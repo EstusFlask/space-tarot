@@ -310,7 +310,7 @@ export const UI_COPY = {
       titlePending: '你的命运正在显现',
       titleComplete: '星盘已完全显影',
       subtitlePending: '轻触背面卡牌，唤醒它们的讯息。',
-      subtitleComplete: '探索已抽出的卡牌，查看它们的传统含义，然后启动 AI 分析。',
+      subtitleComplete: '点击已抽出的卡牌，查看它们的传统含义，然后启动 AI 分析。',
       focusQuery: '聚焦问题：',
       upright: '正位',
       reversed: '逆位',

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DrawnCard } from '../types';
-import { getTarotImageByName, TarotSpread } from '../data/tarotCards';
+import { getLocalizedCardName, getTarotImageByName, TarotSpread } from '../data/tarotCards';
 import { Sparkles, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
 import cardBackImage from '../generated/card_backs/card_back_6.webp?url';
@@ -28,6 +28,22 @@ export default function CardRevealView({
   const localizedSpread = getLocalizedSpread(spread, language);
   const commonCopy = UI_COPY[language].common;
 
+  const localizeKeyword = (keyword: string, cardName: string) => {
+    if (keyword === cardName) {
+      return getLocalizedCardName(cardName, language);
+    }
+
+    if (keyword === 'Upright') {
+      return commonCopy.upright;
+    }
+
+    if (keyword === 'Reversed') {
+      return commonCopy.reversed;
+    }
+
+    return keyword;
+  };
+
   const handleCardClick = (index: number) => {
     if (!flipped.includes(index)) {
       setFlipped([...flipped, index]);
@@ -52,11 +68,12 @@ export default function CardRevealView({
         language,
         cardsDrawn: drawnCards.map(dc => ({
           name: dc.card.name,
+          displayName: getLocalizedCardName(dc.card.name, language),
           positionName: localizedSpread.positions[dc.positionIndex]?.name ?? dc.positionName,
           positionDesc: localizedSpread.positions[dc.positionIndex]?.description ?? dc.positionDesc,
           isUpright: dc.isUpright,
           keywords: (dc.isUpright ? dc.card.uprightKeywords : dc.card.reversedKeywords).map(k =>
-            k === 'Upright' ? commonCopy.upright : k === 'Reversed' ? commonCopy.reversed : k,
+            localizeKeyword(k, dc.card.name),
           ),
           arcana: getLocalizedArcanaLabel(dc.card, language),
           description: dc.card.description,
@@ -102,6 +119,8 @@ export default function CardRevealView({
   };
 
   const allFlipped = flipped.length === drawnCards.length;
+  const selectedCard = selectedCardIndex !== null ? drawnCards[selectedCardIndex].card : null;
+  const selectedCardName = selectedCard ? getLocalizedCardName(selectedCard.name, language) : '';
 
   const getPositionHeading = (index: number) => {
     const position = localizedSpread.positions[drawnCards[index]?.positionIndex ?? index];
@@ -302,7 +321,7 @@ export default function CardRevealView({
                   {getPositionHeading(selectedCardIndex)}
                 </span>
                 <h4 className="text-xl font-serif text-[#dfe2f3] font-bold">
-                  {drawnCards[selectedCardIndex].card.name}{' '}
+                  {selectedCardName}{' '}
                   <span className="text-[#a5e7ff] text-xs">
                     ({drawnCards[selectedCardIndex].isUpright ? commonCopy.upright : commonCopy.reversed})
                   </span>
@@ -311,7 +330,7 @@ export default function CardRevealView({
               <div className="w-10 h-14 rounded border border-white/10 bg-white/5 flex items-center justify-center overflow-hidden">
                 <img
                   src={getTarotImageByName(drawnCards[selectedCardIndex].card.name)}
-                  alt={drawnCards[selectedCardIndex].card.name}
+                  alt={getLocalizedCardName(drawnCards[selectedCardIndex].card.name, language)}
                   className={`h-full w-full object-contain ${drawnCards[selectedCardIndex].isUpright ? '' : 'rotate-180'}`}
                 />
               </div>
@@ -437,6 +456,7 @@ function TarotCardFlipItem({
 }: TarotCardFlipItemProps) {
   const cardImage = getTarotImageByName(dc.card.name);
   const arcanaLabel = getLocalizedArcanaLabel(dc.card, language);
+  const cardName = getLocalizedCardName(dc.card.name, language);
 
   return (
     <div
@@ -480,7 +500,7 @@ function TarotCardFlipItem({
           <div className="relative flex-1 w-full flex items-center justify-center my-1 overflow-hidden rounded-lg">
             <img
               src={cardImage}
-              alt={dc.card.name}
+              alt={cardName}
               className={`max-h-full max-w-full object-contain transition-transform duration-500 ${
                 dc.isUpright ? '' : 'rotate-180'
               }`}
@@ -488,7 +508,7 @@ function TarotCardFlipItem({
           </div>
 
           <div className="w-full flex items-end justify-between text-[7px] uppercase font-sans tracking-widest">
-            <span>{dc.card.name}</span>
+            <span>{cardName}</span>
             <span className="text-white/30">{dc.isUpright ? UI_COPY[language].common.upright : UI_COPY[language].common.reversed}</span>
           </div>
         </div>

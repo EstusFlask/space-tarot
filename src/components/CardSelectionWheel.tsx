@@ -30,12 +30,13 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
   const [question, setQuestion] = useState('');
   const [deck, setDeck] = useState<TarotCard[]>([]);
   const [availableWheelWidth, setAvailableWheelWidth] = useState(() => (typeof window === 'undefined' ? 560 : window.innerWidth - 48));
-  const [flight, setFlight] = useState<CardFlight | null>(null);
-  const [returningSlotIndex, setReturningSlotIndex] = useState<number | null>(null);
+  const [flights, setFlights] = useState<CardFlight[]>([]);
+  const [returningSlotIndexes, setReturningSlotIndexes] = useState<number[]>([]);
   const wheelAreaRef = useRef<HTMLDivElement | null>(null);
   const wheelCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const positionCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const flightIdRef = useRef(0);
+  const flightTimeoutIds = useRef<number[]>([]);
   const lastPointerTypeRef = useRef('');
   const copy = UI_COPY[language].cardSelection;
   const localizedSpread = getLocalizedSpread(spread, language);
@@ -70,15 +71,10 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
   }, []);
 
   useEffect(() => {
-    if (!flight) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setFlight(current => (current?.id === flight.id ? null : current));
-      setReturningSlotIndex(current => (current === flight.slotIndex ? null : current));
-    }, 760);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [flight]);
+    return () => {
+      flightTimeoutIds.current.forEach(timeoutId => window.clearTimeout(timeoutId));
+    };
+  }, []);
 
   const totalToDraw = spread.cardCount;
   const currentDrawIndex = drawn.length;
@@ -111,31 +107,47 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
     const midY = Math.min(fromY, toY) - lift;
     const toScale = Math.max(0.34, Math.min(2.4, Math.min(toRect.width / fromRect.width, toRect.height / fromRect.height)));
 
-    setFlight({
-      id: flightIdRef.current++,
-      slotIndex,
-      style: {
-        width: `${fromRect.width}px`,
-        height: `${fromRect.height}px`,
-        '--flight-from-x': `${fromX}px`,
-        '--flight-from-y': `${fromY}px`,
-        '--flight-mid-x': `${midX}px`,
-        '--flight-mid-y': `${midY}px`,
-        '--flight-to-x': `${toX}px`,
-        '--flight-to-y': `${toY}px`,
-        '--flight-from-rotation': `${fromRotation}deg`,
-        '--flight-mid-rotation': `${(fromRotation + toRotation) / 2 - 8}deg`,
-        '--flight-to-rotation': `${toRotation}deg`,
-        '--flight-to-scale': `${toScale}`,
-      } as CSSProperties,
-    });
+    const flightId = flightIdRef.current++;
+
+    setFlights(current => [
+      ...current,
+      {
+        id: flightId,
+        slotIndex,
+        style: {
+          width: `${fromRect.width}px`,
+          height: `${fromRect.height}px`,
+          '--flight-from-x': `${fromX}px`,
+          '--flight-from-y': `${fromY}px`,
+          '--flight-mid-x': `${midX}px`,
+          '--flight-mid-y': `${midY}px`,
+          '--flight-to-x': `${toX}px`,
+          '--flight-to-y': `${toY}px`,
+          '--flight-from-rotation': `${fromRotation}deg`,
+          '--flight-mid-rotation': `${(fromRotation + toRotation) / 2 - 8}deg`,
+          '--flight-to-rotation': `${toRotation}deg`,
+          '--flight-to-scale': `${toScale}`,
+        } as CSSProperties,
+      },
+    ]);
+
+    const timeoutId = window.setTimeout(() => {
+      setFlights(current => current.filter(item => item.id !== flightId));
+      setReturningSlotIndexes(current => current.filter(index => index !== slotIndex));
+      flightTimeoutIds.current = flightTimeoutIds.current.filter(id => id !== timeoutId);
+    }, 760);
+
+    flightTimeoutIds.current.push(timeoutId);
 
     return true;
   };
 
-  const handleRemoveDrawnCard = (positionIndex: number) => {
-    if (flight) return;
+  const finishCardFlight = (cardFlight: CardFlight) => {
+    setFlights(current => current.filter(item => item.id !== cardFlight.id));
+    setReturningSlotIndexes(current => current.filter(index => index !== cardFlight.slotIndex));
+  };
 
+  const handleRemoveDrawnCard = (positionIndex: number) => {
     const selection = drawn[positionIndex];
     if (!selection) return;
 
@@ -148,14 +160,16 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
     );
 
     if (startedFlight) {
-      setReturningSlotIndex(selection.slotIndex);
+      setReturningSlotIndexes(current => (
+        current.includes(selection.slotIndex) ? current : [...current, selection.slotIndex]
+      ));
     }
 
     setDrawn(prev => prev.filter(item => item.slotIndex !== selection.slotIndex));
   };
 
   const drawCardAtSlot = (slotIndex: number) => {
-    if (flight || drawn.some(item => item.slotIndex === slotIndex) || drawn.length >= totalToDraw) return;
+    if (returningSlotIndexes.includes(slotIndex) || drawn.some(item => item.slotIndex === slotIndex) || drawn.length >= totalToDraw) return;
 
     const sourceDeck = deck.length ? deck : TAROT_DECK;
     const selectedCardIds = new Set(drawn.map(item => item.card.id));
@@ -361,7 +375,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
             const rotationDeg = getWheelCardRotation(i); // Align perpendicular to radius
 
             // Check if this visual slot has been drawn or selected
-            const isSelected = drawn.some(item => item.slotIndex === i) || returningSlotIndex === i;
+            const isSelected = drawn.some(item => item.slotIndex === i) || returningSlotIndexes.includes(i);
             const isRaised = !isSelected && armedSlotIndex === i;
 
             // Dynamically calculate z-index based on the card's vertical height (y coordinate)
@@ -416,15 +430,12 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
         </div>
       </div>
 
-      {flight && (
+      {flights.map(cardFlight => (
         <div
-          key={flight.id}
+          key={cardFlight.id}
           className="tarot-card-flight fixed left-0 top-0 z-[70] rounded border border-[#a5e7ff]/70 bg-[#1b1f2c]/95 pointer-events-none overflow-hidden shadow-[0_0_24px_rgba(165,231,255,0.52)]"
-          style={flight.style}
-          onAnimationEnd={() => {
-            setFlight(null);
-            setReturningSlotIndex(current => (current === flight.slotIndex ? null : current));
-          }}
+          style={cardFlight.style}
+          onAnimationEnd={() => finishCardFlight(cardFlight)}
         >
           <div className="w-full h-full p-0.5">
             <img
@@ -437,7 +448,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
             />
           </div>
         </div>
-      )}
+      ))}
 
       {/* Confirmation Actions - Pushed down with extra mt and bottom padding to avoid any overlap */}
       <div className="relative z-30 mt-10 pb-12 w-full px-4 flex justify-center">
