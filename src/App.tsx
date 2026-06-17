@@ -6,6 +6,7 @@ import CardSelectionWheel from './components/CardSelectionWheel';
 import CardRevealView from './components/CardRevealView';
 import OracleChatView from './components/OracleChatView';
 import ReadingsArchive from './components/ReadingsArchive';
+import PageTransition from './components/PageTransition';
 import { TarotScreen, DrawnCard } from './types';
 import { TarotSpread } from './data/tarotCards';
 import { DEFAULT_LANGUAGE, Language } from './data/localization';
@@ -69,6 +70,48 @@ export default function App() {
     setLanguage(current => (current === 'zh' ? 'en' : 'zh'));
   };
 
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'spread_selection':
+        return <SpreadSelection onSelectSpread={handleSelectSpread} language={language} />;
+
+      case 'choose_cards':
+        return selectedSpread ? (
+          <CardSelectionWheel
+            spread={selectedSpread}
+            onCardsSelected={handleCardsSelected}
+            language={language}
+          />
+        ) : null;
+
+      case 'reveal':
+        return selectedSpread ? (
+          <CardRevealView
+            spread={selectedSpread}
+            drawnCards={drawnCards}
+            question={question}
+            onProceedToChat={handleProceedToChat}
+            language={language}
+          />
+        ) : null;
+
+      case 'chat':
+        return selectedSpread ? (
+          <OracleChatView
+            spread={selectedSpread}
+            drawnCards={drawnCards}
+            initialAnalysis={preloadedAIAnalysis}
+            question={question}
+            onReset={handleNavigateHome}
+            language={language}
+          />
+        ) : null;
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="relative min-h-screen text-[#dfe2f3] select-none">
       
@@ -87,46 +130,7 @@ export default function App() {
 
       {/* Main Content Area Container with padding for floating action bars */}
       <main className="w-full px-4 h-full">
-        {currentScreen === 'spread_selection' && (
-          <div className="animate-fade-in">
-            <SpreadSelection onSelectSpread={handleSelectSpread} language={language} />
-          </div>
-        )}
-
-        {currentScreen === 'choose_cards' && selectedSpread && (
-          <div className="animate-fade-in">
-            <CardSelectionWheel
-              spread={selectedSpread}
-              onCardsSelected={handleCardsSelected}
-              language={language}
-            />
-          </div>
-        )}
-
-        {currentScreen === 'reveal' && selectedSpread && (
-          <div className="animate-fade-in">
-            <CardRevealView
-              spread={selectedSpread}
-              drawnCards={drawnCards}
-              question={question}
-              onProceedToChat={handleProceedToChat}
-              language={language}
-            />
-          </div>
-        )}
-
-        {currentScreen === 'chat' && selectedSpread && (
-          <div className="animate-fade-in">
-            <OracleChatView
-              spread={selectedSpread}
-              drawnCards={drawnCards}
-              initialAnalysis={preloadedAIAnalysis}
-              question={question}
-              onReset={handleNavigateHome}
-              language={language}
-            />
-          </div>
-        )}
+        <PageTransition screenKey={currentScreen}>{renderScreen()}</PageTransition>
       </main>
 
       {/* Persistent Saved Readings Collapsible Archive overlay panel */}
