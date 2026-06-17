@@ -5,6 +5,7 @@ import { Sparkles, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
 import cardBackImage from '../generated/card_backs/card_back_6.webp?url';
 import QuestionPromptDialog from './QuestionPromptDialog';
+import RetryingImage from './RetryingImage';
 import type { AISettings } from '../utils/aiSettings';
 import { hasAIKey } from '../utils/aiSettings';
 import { requestTarotInterpretation } from '../utils/glmClient';
@@ -210,7 +211,7 @@ export default function CardRevealView({
 
             {/* Position 1: Central Situation / Present */}
             <div
-              className={`absolute w-22 h-34 sm:w-26 sm:h-38 transition-all duration-300 hover:scale-110 hover:z-30 cursor-pointer ${
+              className={`absolute w-18 h-28 sm:w-22 sm:h-34 transition-all duration-300 hover:scale-110 hover:z-30 cursor-pointer ${
                 selectedCardIndex === 0 ? 'z-30 scale-105 shadow-2xl shadow-[#a5e7ff]/10' : 'z-10'
               }`}
             >
@@ -229,7 +230,7 @@ export default function CardRevealView({
 
             {/* Position 2: Obstacle (Overlapping rotated) */}
             <div
-              className={`absolute w-22 h-34 sm:w-26 sm:h-38 rotate-90 transform translate-x-2 transition-all duration-300 hover:scale-110 hover:z-30 cursor-pointer ${
+              className={`absolute w-18 h-28 sm:w-22 sm:h-34 rotate-90 transform translate-x-2 transition-all duration-300 hover:scale-110 hover:z-30 cursor-pointer ${
                 selectedCardIndex === 1 ? 'z-30 scale-105 shadow-2xl shadow-[#fface8]/10' : 'z-20'
               }`}
             >
@@ -247,7 +248,7 @@ export default function CardRevealView({
             </div>
 
             {/* Position 3: Subconscious (Below center) */}
-            <div className="absolute bottom-0 z-10 w-22 h-34 sm:w-26 sm:h-38">
+            <div className="absolute bottom-0 z-10 w-18 h-28 sm:w-22 sm:h-34">
               <TarotCardFlipItem
                 dc={drawnCards[2]}
                 isFlipped={flipped.includes(2)}
@@ -262,7 +263,7 @@ export default function CardRevealView({
             </div>
 
             {/* Position 4: Past Base (Left) */}
-            <div className="absolute left-0 z-10 w-22 h-34 sm:w-26 sm:h-38">
+            <div className="absolute left-0 z-10 w-18 h-28 sm:w-22 sm:h-34">
               <TarotCardFlipItem
                 dc={drawnCards[3]}
                 isFlipped={flipped.includes(3)}
@@ -277,7 +278,7 @@ export default function CardRevealView({
             </div>
 
             {/* Position 5: Conscious (Above) */}
-            <div className="absolute top-0 z-10 w-22 h-34 sm:w-26 sm:h-38">
+            <div className="absolute top-0 z-10 w-18 h-28 sm:w-22 sm:h-34">
               <TarotCardFlipItem
                 dc={drawnCards[4]}
                 isFlipped={flipped.includes(4)}
@@ -292,7 +293,7 @@ export default function CardRevealView({
             </div>
 
             {/* Position 6: Immediate Future (Right of core) */}
-            <div className="absolute right-0 z-10 w-22 h-34 sm:w-26 sm:h-38">
+            <div className="absolute right-0 z-10 w-18 h-28 sm:w-22 sm:h-34">
               <TarotCardFlipItem
                 dc={drawnCards[5]}
                 isFlipped={flipped.includes(5)}
@@ -312,7 +313,7 @@ export default function CardRevealView({
             {[9, 8, 7, 6].map((idx) => {
               const dc = drawnCards[idx];
               return (
-                <div key={idx} className="flex flex-col items-center relative w-18 h-28 sm:w-24 sm:h-36">
+                <div key={idx} className="flex flex-col items-center relative w-18 h-28 sm:w-22 sm:h-34">
                   <TarotCardFlipItem
                     dc={dc}
                     isFlipped={flipped.includes(idx)}
@@ -348,7 +349,7 @@ export default function CardRevealView({
                 </h4>
               </div>
               <div className="w-10 h-14 rounded border border-white/10 bg-white/5 flex items-center justify-center overflow-hidden">
-                <img
+                <RetryingImage
                   src={getTarotImageByName(drawnCards[selectedCardIndex].card.name)}
                   alt={getLocalizedCardName(drawnCards[selectedCardIndex].card.name, language)}
                   className={`h-full w-full object-contain ${drawnCards[selectedCardIndex].isUpright ? '' : 'rotate-180'}`}
@@ -504,7 +505,7 @@ function TarotCardFlipItem({
       >
         {/* Face-down structure */}
         <div className="absolute inset-0 w-full h-full backface-hidden rounded-xl flex items-center justify-center overflow-hidden bg-transparent transition-[filter] duration-300 group-hover:drop-shadow-[0_0_14px_rgba(165,231,255,0.35)]">
-          <img
+          <RetryingImage
             src={cardBackImage}
             alt={UI_COPY[language].cardSelection.faceDownLabel}
             draggable={false}
@@ -525,7 +526,7 @@ function TarotCardFlipItem({
           </div>
 
           <div className="relative flex-1 w-full flex items-center justify-center my-1 overflow-hidden rounded-lg">
-            <img
+            <RetryingImage
               src={cardImage}
               alt={cardName}
               className={`max-h-full max-w-full object-contain transition-transform duration-500 ${

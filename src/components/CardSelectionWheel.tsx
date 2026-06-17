@@ -1,10 +1,13 @@
-import { type CSSProperties, useState, useEffect, useRef } from 'react';
+import { type CSSProperties, useState, useEffect, useMemo, useRef } from 'react';
 import { TarotCard, TarotSpread, TAROT_DECK } from '../data/tarotCards';
 import { DrawnCard } from '../types';
 import { Sparkles, PenTool, Check } from 'lucide-react';
 import { cryptoRandomBoolean, cryptoRandomInt, cryptoShuffle } from '../utils/cryptoRandom';
 import { Language, UI_COPY, getLocalizedSpread } from '../data/localization';
 import cardBackImage from '../generated/card_backs/card_back_6.webp?url';
+import RetryingImage from './RetryingImage';
+
+const TOTAL_CARDS_IN_WHEEL = 78;
 
 interface CardSelectionWheelProps {
   spread: TarotSpread;
@@ -43,6 +46,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
   const copy = UI_COPY[language].cardSelection;
   const localizedSpread = getLocalizedSpread(spread, language);
   const positionSlots = localizedSpread.positions;
+  const wheelSlotIndexes = useMemo(() => Array.from({ length: TOTAL_CARDS_IN_WHEEL }, (_, i) => i), []);
 
   useEffect(() => {
     setDeck(cryptoShuffle(TAROT_DECK));
@@ -83,7 +87,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
   const isSelectionComplete = drawn.length >= totalToDraw;
 
   const getWheelCardRotation = (slotIndex: number) => {
-    const angle = (slotIndex / totalCardsInWheel) * 2 * Math.PI;
+    const angle = (slotIndex / TOTAL_CARDS_IN_WHEEL) * 2 * Math.PI;
     return (angle * 180) / Math.PI + 90;
   };
 
@@ -239,7 +243,6 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
   };
 
   // Generate coordinates for fanned circle (exactly 78 visible cards mapping to a full Tarot deck)
-  const totalCardsInWheel = 78;
   const wheelOuterDiameter = Math.min(560, Math.max(272, availableWheelWidth));
   const cardHeight = Math.round(Math.min(80, Math.max(60, wheelOuterDiameter * (80 / 560))));
   const cardWidth = Math.round(cardHeight * (2 / 3));
@@ -363,7 +366,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
       {/* Floating Circle Tarot deck - Taller container height and extra margins to avoid overlap */}
       <div
         ref={wheelAreaRef}
-        className="relative w-full my-8 md:my-10 flex items-center justify-center z-10 select-none"
+        className="relative w-full my-8 md:my-10 flex items-center justify-center z-10 select-none touch-pan-y"
         style={{ height: `${wheelFrameHeight}px` }}
       >
         {/* Subtle center ambient light source */}
@@ -389,8 +392,8 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
           className="relative flex items-center justify-center"
           style={{ width: `${wheelDiameter}px`, height: `${wheelDiameter}px` }}
         >
-          {Array.from({ length: totalCardsInWheel }).map((_, i) => {
-            const angle = (i / totalCardsInWheel) * 2 * Math.PI;
+          {wheelSlotIndexes.map((i) => {
+            const angle = (i / TOTAL_CARDS_IN_WHEEL) * 2 * Math.PI;
             const x = radius * Math.cos(angle);
             const y = radius * Math.sin(angle);
             const rotationDeg = getWheelCardRotation(i); // Align perpendicular to radius
@@ -416,8 +419,8 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
                 onClick={() => handleCardClick(i)}
                 style={{
                   position: 'absolute',
-                  transform: `translate(${x}px, ${isRaised ? y - 8 : y}px) rotate(${rotationDeg}deg)`,
-                  transition: 'all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1)',
+                  transform: `translate3d(${x}px, ${isRaised ? y - 8 : y}px, 0) rotate(${rotationDeg}deg)`,
+                  transition: 'transform 0.28s cubic-bezier(0.165, 0.84, 0.44, 1), opacity 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
                   zIndex: itemZIndex,
                   opacity: isSelected ? 0.0 : 1, // Make it completely disappear from the wheel upon draw
                   transformOrigin: 'center center',
@@ -430,12 +433,12 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
                     ? 'border-gray-800 bg-gray-900/10'
                     : isRaised
                       ? 'border-[#a5e7ff] bg-[#1b1f2c]/90'
-                      : 'border-[#a5e7ff]/30 hover:border-[#a5e7ff] bg-[#1b1f2c]/85 hover:-translate-y-2'
-                } tarot-wheel-card backdrop-blur-xs flex items-center justify-center cursor-pointer shadow-[0_4px_10px_rgba(0,0,0,0.4)] transition-all`}
+                    : 'border-[#a5e7ff]/30 hover:border-[#a5e7ff] bg-[#1b1f2c]/85'
+                } tarot-wheel-card flex items-center justify-center cursor-pointer shadow-[0_4px_10px_rgba(0,0,0,0.4)]`}
               >
                 {!isSelected && (
                   <div className="w-full h-full p-0.5 pointer-events-none">
-                    <img
+                    <RetryingImage
                       src={cardBackImage}
                       alt=""
                       aria-hidden="true"
@@ -459,7 +462,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
           onAnimationEnd={() => finishCardFlight(cardFlight)}
         >
           <div className="w-full h-full p-0.5">
-            <img
+            <RetryingImage
               src={cardBackImage}
               alt=""
               aria-hidden="true"

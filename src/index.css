@@ -30,8 +30,10 @@
   backdrop-filter: blur(24px);
 }
 
-.tarot-wheel-card:hover {
-  z-index: 300 !important;
+@media (hover: hover) and (pointer: fine) {
+  .tarot-wheel-card:hover {
+    z-index: 300 !important;
+  }
 }
 
 .tarot-card-flight {

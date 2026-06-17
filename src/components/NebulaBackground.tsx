@@ -8,8 +8,16 @@ export default function NebulaBackground() {
     if (!canvas) return;
 
     let gl: WebGLRenderingContext | null = null;
+    const contextOptions: WebGLContextAttributes = {
+      alpha: false,
+      antialias: false,
+      depth: false,
+      stencil: false,
+      powerPreference: 'low-power',
+    };
+
     try {
-      gl = canvas.getContext('webgl') || (canvas.getContext('experimental-webgl') as WebGLRenderingContext);
+      gl = canvas.getContext('webgl', contextOptions) || (canvas.getContext('experimental-webgl', contextOptions) as WebGLRenderingContext);
     } catch {
       // Ignore
     }
@@ -103,32 +111,51 @@ export default function NebulaBackground() {
     const uMouse = gl.getUniformLocation(program, 'u_mouse');
 
     let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let touchMoveFrameId: number | null = null;
+    let pendingTouchPoint: { x: number; y: number } | null = null;
+    let minFrameInterval = 0;
+
+    const updateFrameBudget = () => {
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const isCoarseTablet = window.matchMedia('(pointer: coarse)').matches && Math.min(window.innerWidth, window.innerHeight) >= 700;
+      minFrameInterval = prefersReducedMotion ? 1000 : isCoarseTablet ? 1000 / 30 : 0;
+    };
+
+    const updateMouseFromClientPoint = (clientX: number, clientY: number) => {
+      const width = canvas.clientWidth || window.innerWidth;
+      const height = canvas.clientHeight || window.innerHeight;
+
+      if (width && height) {
+        mouse.x = (clientX / width) * canvas.width;
+        mouse.y = (1.0 - clientY / height) * canvas.height;
+      }
+    };
 
     const handleMouseMove = (event: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      if (rect.width && rect.height) {
-        const nx = (event.clientX - rect.left) / rect.width;
-        const ny = 1.0 - (event.clientY - rect.top) / rect.height;
-        mouse.x = nx * canvas.width;
-        mouse.y = ny * canvas.height;
-      }
+      updateMouseFromClientPoint(event.clientX, event.clientY);
     };
 
     const handleTouchMove = (event: TouchEvent) => {
       if (event.touches.length > 0) {
         const touch = event.touches[0];
-        const rect = canvas.getBoundingClientRect();
-        if (rect.width && rect.height) {
-          const nx = (touch.clientX - rect.left) / rect.width;
-          const ny = 1.0 - (touch.clientY - rect.top) / rect.height;
-          mouse.x = nx * canvas.width;
-          mouse.y = ny * canvas.height;
+        pendingTouchPoint = { x: touch.clientX, y: touch.clientY };
+
+        if (touchMoveFrameId === null) {
+          touchMoveFrameId = requestAnimationFrame(() => {
+            if (pendingTouchPoint) {
+              updateMouseFromClientPoint(pendingTouchPoint.x, pendingTouchPoint.y);
+              pendingTouchPoint = null;
+            }
+
+            touchMoveFrameId = null;
+          });
         }
       }
     };
 
+    const touchMoveOptions: AddEventListenerOptions = { passive: true };
     window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('touchmove', handleTouchMove, touchMoveOptions);
 
     const resize = () => {
       const w = window.innerWidth;
@@ -137,14 +164,24 @@ export default function NebulaBackground() {
         canvas.width = w;
         canvas.height = h;
       }
+      updateFrameBudget();
     };
 
     window.addEventListener('resize', resize);
+    updateFrameBudget();
     resize();
 
     let animationFrameId: number;
+    let lastRenderTime = 0;
     const render = (time: number) => {
       if (!canvas || !gl) return;
+      animationFrameId = requestAnimationFrame(render);
+
+      if (document.hidden || (minFrameInterval > 0 && time - lastRenderTime < minFrameInterval)) {
+        return;
+      }
+
+      lastRenderTime = time;
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -154,16 +191,18 @@ export default function NebulaBackground() {
       gl.uniform2f(uMouse, mouse.x, mouse.y);
 
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      animationFrameId = requestAnimationFrame(render);
     };
 
     animationFrameId = requestAnimationFrame(render);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchmove', handleTouchMove, touchMoveOptions);
       window.removeEventListener('resize', resize);
       cancelAnimationFrame(animationFrameId);
+      if (touchMoveFrameId !== null) {
+        cancelAnimationFrame(touchMoveFrameId);
+      }
     };
   }, []);
 
