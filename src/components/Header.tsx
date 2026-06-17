@@ -61,7 +61,7 @@ export default function Header({
           onClick={onToggleLanguage}
           title={language === 'zh' ? '切换为 English' : 'Switch to 中文'}
           aria-pressed={language === 'en'}
-          className="glass-panel rounded-full px-3 py-1.5 flex items-center justify-center text-[10px] font-bold tracking-[0.3em] text-[#dfe2f3] uppercase hover:text-white transition-all active:scale-95 duration-200 cursor-pointer"
+          className="glass-panel rounded-full px-3 py-1.5 flex items-center justify-center text-[10px] font-bold tracking-[0.3em] text-[#a5e7ff] uppercase hover:text-white hover:drop-shadow-[0_0_8px_rgba(165,231,255,0.8)] transition-all active:scale-95 duration-200 cursor-pointer"
         >
           {copy.languageLabel}
         </button>

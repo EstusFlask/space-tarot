@@ -468,7 +468,7 @@ function TarotCardFlipItem({
 
         {/* Face-up structure */}
         <div
-          className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-[#1b1f2c] rounded-xl overflow-hidden shadow-2xl border flex flex-col items-center justify-between p-2 sm:p-4 ${themeClass}`}
+          className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-[#1b1f2c] rounded-xl overflow-hidden shadow-2xl border flex flex-col items-center justify-between p-2 sm:p-4 transition-[filter,box-shadow] duration-300 group-hover:drop-shadow-[0_0_14px_rgba(165,231,255,0.35)] ${themeClass}`}
         >
           {/* Bevel details */}
           <div className="absolute inset-1.5 border border-white/[0.04] rounded-lg pointer-events-none" />

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { type CSSProperties, useState, useEffect, useRef } from 'react';
 import { TarotCard, TarotSpread, TAROT_DECK } from '../data/tarotCards';
 import { DrawnCard } from '../types';
 import { Sparkles, PenTool } from 'lucide-react';
@@ -18,13 +18,24 @@ interface DrawSelection {
   isUpright: boolean;
 }
 
+interface CardFlight {
+  id: number;
+  slotIndex: number;
+  style: CSSProperties;
+}
+
 export default function CardSelectionWheel({ spread, onCardsSelected, language }: CardSelectionWheelProps) {
   const [drawn, setDrawn] = useState<DrawSelection[]>([]);
   const [armedSlotIndex, setArmedSlotIndex] = useState<number | null>(null);
   const [question, setQuestion] = useState('');
   const [deck, setDeck] = useState<TarotCard[]>([]);
   const [availableWheelWidth, setAvailableWheelWidth] = useState(() => (typeof window === 'undefined' ? 560 : window.innerWidth - 48));
+  const [flight, setFlight] = useState<CardFlight | null>(null);
+  const [returningSlotIndex, setReturningSlotIndex] = useState<number | null>(null);
   const wheelAreaRef = useRef<HTMLDivElement | null>(null);
+  const wheelCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const positionCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const flightIdRef = useRef(0);
   const lastPointerTypeRef = useRef('');
   const copy = UI_COPY[language].cardSelection;
   const localizedSpread = getLocalizedSpread(spread, language);
@@ -58,37 +69,116 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
     };
   }, []);
 
+  useEffect(() => {
+    if (!flight) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setFlight(current => (current?.id === flight.id ? null : current));
+      setReturningSlotIndex(current => (current === flight.slotIndex ? null : current));
+    }, 760);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [flight]);
+
   const totalToDraw = spread.cardCount;
   const currentDrawIndex = drawn.length;
   const isSelectionComplete = drawn.length >= totalToDraw;
 
-  const handleRemoveDrawnCard = (slotIndex: number) => {
-    setDrawn(prev => prev.filter(item => item.slotIndex !== slotIndex));
+  const getWheelCardRotation = (slotIndex: number) => {
+    const angle = (slotIndex / totalCardsInWheel) * 2 * Math.PI;
+    return (angle * 180) / Math.PI + 90;
+  };
+
+  const startCardFlight = (
+    fromElement: HTMLElement | null,
+    toElement: HTMLElement | null,
+    slotIndex: number,
+    fromRotation: number,
+    toRotation: number,
+  ) => {
+    if (!fromElement || !toElement) return false;
+
+    const fromRect = fromElement.getBoundingClientRect();
+    const toRect = toElement.getBoundingClientRect();
+    const fromX = fromRect.left;
+    const fromY = fromRect.top;
+    const toX = toRect.left + toRect.width / 2 - fromRect.width / 2;
+    const toY = toRect.top + toRect.height / 2 - fromRect.height / 2;
+    const travelX = toX - fromX;
+    const travelY = toY - fromY;
+    const lift = Math.min(120, Math.max(54, Math.hypot(travelX, travelY) * 0.14));
+    const midX = fromX + travelX * 0.55;
+    const midY = Math.min(fromY, toY) - lift;
+    const toScale = Math.max(0.34, Math.min(2.4, Math.min(toRect.width / fromRect.width, toRect.height / fromRect.height)));
+
+    setFlight({
+      id: flightIdRef.current++,
+      slotIndex,
+      style: {
+        width: `${fromRect.width}px`,
+        height: `${fromRect.height}px`,
+        '--flight-from-x': `${fromX}px`,
+        '--flight-from-y': `${fromY}px`,
+        '--flight-mid-x': `${midX}px`,
+        '--flight-mid-y': `${midY}px`,
+        '--flight-to-x': `${toX}px`,
+        '--flight-to-y': `${toY}px`,
+        '--flight-from-rotation': `${fromRotation}deg`,
+        '--flight-mid-rotation': `${(fromRotation + toRotation) / 2 - 8}deg`,
+        '--flight-to-rotation': `${toRotation}deg`,
+        '--flight-to-scale': `${toScale}`,
+      } as CSSProperties,
+    });
+
+    return true;
+  };
+
+  const handleRemoveDrawnCard = (positionIndex: number) => {
+    if (flight) return;
+
+    const selection = drawn[positionIndex];
+    if (!selection) return;
+
+    const startedFlight = startCardFlight(
+      positionCardRefs.current[positionIndex],
+      wheelCardRefs.current[selection.slotIndex],
+      selection.slotIndex,
+      0,
+      getWheelCardRotation(selection.slotIndex),
+    );
+
+    if (startedFlight) {
+      setReturningSlotIndex(selection.slotIndex);
+    }
+
+    setDrawn(prev => prev.filter(item => item.slotIndex !== selection.slotIndex));
   };
 
   const drawCardAtSlot = (slotIndex: number) => {
-    setDrawn(prev => {
-      if (prev.some(item => item.slotIndex === slotIndex)) {
-        return prev.filter(item => item.slotIndex !== slotIndex);
-      }
+    if (flight || drawn.some(item => item.slotIndex === slotIndex) || drawn.length >= totalToDraw) return;
 
-      if (prev.length >= totalToDraw) return prev;
+    const sourceDeck = deck.length ? deck : TAROT_DECK;
+    const selectedCardIds = new Set(drawn.map(item => item.card.id));
+    const availableCards = sourceDeck.filter(card => !selectedCardIds.has(card.id));
 
-      const sourceDeck = deck.length ? deck : TAROT_DECK;
-      const selectedCardIds = new Set(prev.map(item => item.card.id));
-      const availableCards = sourceDeck.filter(card => !selectedCardIds.has(card.id));
+    if (!availableCards.length) return;
 
-      if (!availableCards.length) return prev;
+    startCardFlight(
+      wheelCardRefs.current[slotIndex],
+      positionCardRefs.current[drawn.length],
+      slotIndex,
+      getWheelCardRotation(slotIndex),
+      0,
+    );
 
-      return [
-        ...prev,
-        {
-          slotIndex,
-          card: availableCards[cryptoRandomInt(availableCards.length)],
-          isUpright: cryptoRandomBoolean(),
-        },
-      ];
-    });
+    setDrawn([
+      ...drawn,
+      {
+        slotIndex,
+        card: availableCards[cryptoRandomInt(availableCards.length)],
+        isUpright: cryptoRandomBoolean(),
+      },
+    ]);
   };
 
   const handleCardClick = (slotIndex: number) => {
@@ -147,14 +237,13 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
         <div className="flex flex-col gap-1.5 w-full">
           {positionSlots.map((pos, idx) => {
             const isFilled = drawn[idx] !== undefined;
-            const slotIndex = isFilled ? drawn[idx].slotIndex : null;
 
             return (
               <div
                 key={pos.name}
                 onClick={() => {
-                  if (isFilled && slotIndex !== null) {
-                    handleRemoveDrawnCard(slotIndex);
+                  if (isFilled) {
+                    handleRemoveDrawnCard(idx);
                   }
                 }}
                 title={isFilled ? copy.cancelTitle : copy.hintTitle}
@@ -174,6 +263,9 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
                 </div>
 
                 <div
+                  ref={(node) => {
+                    positionCardRefs.current[idx] = node;
+                  }}
                   className={`w-6 h-9 rounded border flex items-center justify-center shrink-0 ml-2 transition-all ${
                     isFilled
                       ? 'border-[#fface8]/30 bg-[#1b1f2c] text-[#fface8] group-hover:border-rose-500 group-hover:bg-rose-950 group-hover:text-rose-400'
@@ -266,10 +358,10 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
             const angle = (i / totalCardsInWheel) * 2 * Math.PI;
             const x = radius * Math.cos(angle);
             const y = radius * Math.sin(angle);
-            const rotationDeg = (angle * 180) / Math.PI + 90; // Align perpendicular to radius
+            const rotationDeg = getWheelCardRotation(i); // Align perpendicular to radius
 
             // Check if this visual slot has been drawn or selected
-            const isSelected = drawn.some(item => item.slotIndex === i);
+            const isSelected = drawn.some(item => item.slotIndex === i) || returningSlotIndex === i;
             const isRaised = !isSelected && armedSlotIndex === i;
 
             // Dynamically calculate z-index based on the card's vertical height (y coordinate)
@@ -280,6 +372,9 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
             return (
               <div
                 key={i}
+                ref={(node) => {
+                  wheelCardRefs.current[i] = node;
+                }}
                 onPointerDown={(event) => {
                   lastPointerTypeRef.current = event.pointerType;
                 }}
@@ -320,6 +415,29 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
           })}
         </div>
       </div>
+
+      {flight && (
+        <div
+          key={flight.id}
+          className="tarot-card-flight fixed left-0 top-0 z-[70] rounded border border-[#a5e7ff]/70 bg-[#1b1f2c]/95 pointer-events-none overflow-hidden shadow-[0_0_24px_rgba(165,231,255,0.52)]"
+          style={flight.style}
+          onAnimationEnd={() => {
+            setFlight(null);
+            setReturningSlotIndex(current => (current === flight.slotIndex ? null : current));
+          }}
+        >
+          <div className="w-full h-full p-0.5">
+            <img
+              src={cardBackImage}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              decoding="async"
+              className="w-full h-full rounded object-contain"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Actions - Pushed down with extra mt and bottom padding to avoid any overlap */}
       <div className="relative z-30 mt-10 pb-12 w-full px-4 flex justify-center">
