@@ -269,13 +269,13 @@ const SPREAD_COPY: Record<string, LocalizedSpreadCopy> = {
 export const UI_COPY = {
   zh: {
     header: {
-      title: '塔罗占卜',
+      title: '星空塔罗',
       homeTitle: '返回首页',
       resetTitle: '重置解读',
       historyTitle: '占卜档案',
       guidanceTitle: '塔罗指引',
       guidanceAlert:
-        '塔罗占卜 v2.0 - 由 Google Gemini AI 驱动。\n专注你的能量，选择牌阵，抽取卡牌，并阅读实时灵性解读。',
+        '星空塔罗 v2.0 - 由 Google Gemini AI 驱动。\n专注你的能量，选择牌阵，抽取卡牌，并阅读实时灵性解读。',
       languageLabel: 'EN',
     },
     spreadSelection: {
@@ -386,13 +386,13 @@ export const UI_COPY = {
   },
   en: {
     header: {
-      title: 'TAROT DIVINATION',
+      title: 'Space Tarot',
       homeTitle: 'Home',
       resetTitle: 'Reset Reading',
       historyTitle: 'Readings Archive',
       guidanceTitle: 'Oracle Guidance',
       guidanceAlert:
-        'Tarot Divination v2.0 - Powered by Google Gemini AI\nFocus your energy, select your spread, draw your cards, and read live spiritual interpretations.',
+        'Space Tarot v2.0 - Powered by Google Gemini AI\nFocus your energy, select your spread, draw your cards, and read live spiritual interpretations.',
       languageLabel: '中文',
     },
     spreadSelection: {
