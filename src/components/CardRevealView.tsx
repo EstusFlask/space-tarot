@@ -487,7 +487,7 @@ function TarotCardFlipItem({
               src={cardImage}
               alt={dc.card.name}
               className={`max-h-full max-w-full object-contain transition-transform duration-500 ${
-                isFlipped ? 'rotate-180' : ''
+                dc.isUpright ? '' : 'rotate-180'
               }`}
             />
           </div>
