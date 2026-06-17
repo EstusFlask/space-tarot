@@ -4,6 +4,9 @@ import { getLocalizedCardName, TarotSpread } from '../data/tarotCards';
 import ReactMarkdown from 'react-markdown';
 import { Send, Sparkles, Save, CheckCircle, RefreshCw } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
+import type { AISettings } from '../utils/aiSettings';
+import { hasAIKey } from '../utils/aiSettings';
+import { requestTarotInterpretation } from '../utils/glmClient';
 
 interface OracleChatViewProps {
   spread: TarotSpread;
@@ -12,6 +15,8 @@ interface OracleChatViewProps {
   question: string;
   onReset: () => void;
   language: Language;
+  aiSettings: AISettings;
+  onOpenAISettings: () => void;
 }
 
 export default function OracleChatView({
@@ -21,6 +26,8 @@ export default function OracleChatView({
   question,
   onReset,
   language,
+  aiSettings,
+  onOpenAISettings,
 }: OracleChatViewProps) {
   const copy = UI_COPY[language].oracleChat;
   const commonCopy = UI_COPY[language].common;
@@ -61,6 +68,11 @@ export default function OracleChatView({
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim() || isLoading) return;
 
+    if (!hasAIKey(aiSettings)) {
+      onOpenAISettings();
+      return;
+    }
+
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -97,23 +109,15 @@ export default function OracleChatView({
         history: chatHistory,
       };
 
-      const response = await fetch('/api/interpret-tarot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const interpretation = await requestTarotInterpretation({
+        ...payload,
+        settings: aiSettings,
       });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || copy.errorText);
-      }
-
-      const data = await response.json();
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         role: 'ai',
-        text: data.interpretation,
+        text: interpretation,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
 

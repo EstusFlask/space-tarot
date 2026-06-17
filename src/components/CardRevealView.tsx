@@ -4,13 +4,19 @@ import { getLocalizedCardName, getTarotImageByName, TarotSpread } from '../data/
 import { Sparkles, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
 import cardBackImage from '../generated/card_backs/card_back_6.webp?url';
+import QuestionPromptDialog from './QuestionPromptDialog';
+import type { AISettings } from '../utils/aiSettings';
+import { hasAIKey } from '../utils/aiSettings';
+import { requestTarotInterpretation } from '../utils/glmClient';
 
 interface CardRevealViewProps {
   spread: TarotSpread;
   drawnCards: DrawnCard[];
-  onProceedToChat: (preloadedAIAnalysis: string) => void;
+  onProceedToChat: (preloadedAIAnalysis: string, question?: string) => void;
   question: string;
   language: Language;
+  aiSettings: AISettings;
+  onOpenAISettings: () => void;
 }
 
 export default function CardRevealView({
@@ -19,11 +25,14 @@ export default function CardRevealView({
   onProceedToChat,
   question,
   language,
+  aiSettings,
+  onOpenAISettings,
 }: CardRevealViewProps) {
   const [flipped, setFlipped] = useState<number[]>([]);
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [showQuestionPrompt, setShowQuestionPrompt] = useState(false);
   const copy = UI_COPY[language].cardReveal;
   const localizedSpread = getLocalizedSpread(spread, language);
   const commonCopy = UI_COPY[language].common;
@@ -57,14 +66,15 @@ export default function CardRevealView({
     setFlipped(allIndices);
   };
 
-  const handleConsultOracle = async () => {
+  const consultGLM = async (focusQuestion: string) => {
     setIsAiLoading(true);
     setAiError(null);
 
     try {
       const payload = {
+        settings: aiSettings,
         spreadName: localizedSpread.name,
-        question,
+        question: focusQuestion,
         language,
         cardsDrawn: drawnCards.map(dc => ({
           name: dc.card.name,
@@ -80,25 +90,35 @@ export default function CardRevealView({
         })),
       };
 
-      const response = await fetch('/api/interpret-tarot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || copy.fallbackError);
-      }
-
-      const data = await response.json();
-      onProceedToChat(data.interpretation);
+      const interpretation = await requestTarotInterpretation(payload);
+      onProceedToChat(interpretation, focusQuestion);
     } catch (err: any) {
       console.error('Error in Oracle consultation:', err);
       setAiError(err.message || copy.consultationError);
     } finally {
       setIsAiLoading(false);
     }
+  };
+
+  const handleConsultOracle = async () => {
+    if (!hasAIKey(aiSettings)) {
+      setAiError(null);
+      onOpenAISettings();
+      return;
+    }
+
+    if (!question.trim()) {
+      setAiError(null);
+      setShowQuestionPrompt(true);
+      return;
+    }
+
+    await consultGLM(question.trim());
+  };
+
+  const handleSubmitQuestionPrompt = (focusQuestion: string) => {
+    setShowQuestionPrompt(false);
+    void consultGLM(focusQuestion);
   };
 
   const getThemeClass = (theme: string) => {
@@ -432,6 +452,13 @@ export default function CardRevealView({
           </div>
         </div>
       )}
+
+      <QuestionPromptDialog
+        open={showQuestionPrompt}
+        language={language}
+        onCancel={() => setShowQuestionPrompt(false)}
+        onSubmit={handleSubmitQuestionPrompt}
+      />
     </div>
   );
 }

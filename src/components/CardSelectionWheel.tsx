@@ -1,7 +1,7 @@
 import { type CSSProperties, useState, useEffect, useRef } from 'react';
 import { TarotCard, TarotSpread, TAROT_DECK } from '../data/tarotCards';
 import { DrawnCard } from '../types';
-import { Sparkles, PenTool } from 'lucide-react';
+import { Sparkles, PenTool, Check } from 'lucide-react';
 import { cryptoRandomBoolean, cryptoRandomInt, cryptoShuffle } from '../utils/cryptoRandom';
 import { Language, UI_COPY, getLocalizedSpread } from '../data/localization';
 import cardBackImage from '../generated/card_backs/card_back_6.webp?url';
@@ -29,10 +29,12 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
   const [armedSlotIndex, setArmedSlotIndex] = useState<number | null>(null);
   const [question, setQuestion] = useState('');
   const [deck, setDeck] = useState<TarotCard[]>([]);
+  const [isQuestionDirty, setIsQuestionDirty] = useState(false);
   const [availableWheelWidth, setAvailableWheelWidth] = useState(() => (typeof window === 'undefined' ? 560 : window.innerWidth - 48));
   const [flights, setFlights] = useState<CardFlight[]>([]);
   const [returningSlotIndexes, setReturningSlotIndexes] = useState<number[]>([]);
   const wheelAreaRef = useRef<HTMLDivElement | null>(null);
+  const questionInputRef = useRef<HTMLInputElement | null>(null);
   const wheelCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const positionCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const flightIdRef = useRef(0);
@@ -231,6 +233,11 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
     onCardsSelected(result, question.trim());
   };
 
+  const handleConfirmQuestion = () => {
+    setIsQuestionDirty(false);
+    questionInputRef.current?.blur();
+  };
+
   // Generate coordinates for fanned circle (exactly 78 visible cards mapping to a full Tarot deck)
   const totalCardsInWheel = 78;
   const wheelOuterDiameter = Math.min(560, Math.max(272, availableWheelWidth));
@@ -309,12 +316,26 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
         </label>
         <div className="relative">
           <input
+            ref={questionInputRef}
             type="text"
-            className="w-full bg-[#1b1f2c]/50 border border-white/10 rounded-full py-2.5 px-6 font-sans text-sm text-[#dfe2f3] placeholder-[#bbc9cf]/40 focus:border-[#a5e7ff] focus:ring-1 focus:ring-[#a5e7ff]/30 focus:outline-none transition-colors align-middle shadow-lg text-center"
+            className="w-full bg-[#1b1f2c]/50 border border-white/10 rounded-full py-2.5 pl-6 pr-14 font-sans text-sm text-[#dfe2f3] placeholder-[#bbc9cf]/40 focus:border-[#a5e7ff] focus:ring-1 focus:ring-[#a5e7ff]/30 focus:outline-none transition-colors align-middle shadow-lg text-center"
             placeholder={copy.placeholder}
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            onChange={(e) => {
+              setQuestion(e.target.value);
+              setIsQuestionDirty(true);
+            }}
           />
+          {isQuestionDirty && (
+            <button
+              type="button"
+              onClick={handleConfirmQuestion}
+              title={copy.confirmQuestionTitle}
+              className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-[#a5e7ff] text-black shadow-[0_0_12px_rgba(165,231,255,0.55)] transition-all hover:scale-105 active:scale-95"
+            >
+              <Check className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 

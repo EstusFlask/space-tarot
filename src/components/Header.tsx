@@ -1,5 +1,5 @@
 import { TarotScreen } from '../types';
-import { Home, Sparkles, HelpCircle, History, RotateCcw } from 'lucide-react';
+import { Home, Sparkles, History, RotateCcw, Settings } from 'lucide-react';
 import { Language, UI_COPY } from '../data/localization';
 
 interface HeaderProps {
@@ -7,6 +7,7 @@ interface HeaderProps {
   onNavigateHome: () => void;
   onResetReading?: () => void;
   onShowHistory?: () => void;
+  onOpenAISettings: () => void;
   language: Language;
   onToggleLanguage: () => void;
 }
@@ -16,6 +17,7 @@ export default function Header({
   onNavigateHome,
   onResetReading,
   onShowHistory,
+  onOpenAISettings,
   language,
   onToggleLanguage,
 }: HeaderProps) {
@@ -75,11 +77,11 @@ export default function Header({
           </button>
         )}
         <button
-          onClick={() => alert(copy.guidanceAlert)}
-          title={copy.guidanceTitle}
+          onClick={onOpenAISettings}
+          title={copy.aiSettingsTitle}
           className="text-[#bbc9cf] hover:text-[#a5e7ff] transition-colors active:scale-95 duration-200 cursor-pointer p-1"
         >
-          <HelpCircle className="w-5 h-5" />
+          <Settings className="w-5 h-5" />
         </button>
       </div>
     </header>

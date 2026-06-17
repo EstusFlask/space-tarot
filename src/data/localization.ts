@@ -273,10 +273,26 @@ export const UI_COPY = {
       homeTitle: '返回首页',
       resetTitle: '重置解读',
       historyTitle: '占卜档案',
-      guidanceTitle: '塔罗指引',
-      guidanceAlert:
-        '星空塔罗 v2.0 - 由 Google Gemini AI 驱动。\n专注你的能量，选择牌阵，抽取卡牌，并阅读实时灵性解读。',
+      aiSettingsTitle: 'AI 设置',
       languageLabel: 'EN',
+    },
+    aiSettings: {
+      title: 'AI 设置',
+      subtitle: '智谱 GLM',
+      modelLabel: '请求的 AI 模型',
+      apiKeyLabel: 'API key',
+      apiKeyPlaceholder: '填写你的 GLM API key',
+      apiKeyLink: '创建 GLM API key（免费）',
+      unlockTitle: '解锁后修改模型',
+      lockTitle: '锁定模型',
+      cancel: '取消',
+      save: '保存',
+    },
+    questionPrompt: {
+      title: '提问塔罗',
+      placeholder: '你想询问什么？例如：这段关系接下来会怎样……',
+      cancel: '取消',
+      send: '发送',
     },
     spreadSelection: {
       title: '选择你的牌阵',
@@ -298,6 +314,7 @@ export const UI_COPY = {
       empty: '空位',
       label: '输入你的意向或问题（可选）',
       placeholder: '你想询问什么？例如：我的事业走向……',
+      confirmQuestionTitle: '确认问题',
       title: '选择你的卡牌',
       drawMore: (remaining: number, spreadName: string, positionName: string) =>
         `还需抽取 ${remaining} 张牌，用于 ${spreadName} 的「${positionName}」位置`,
@@ -321,11 +338,11 @@ export const UI_COPY = {
       consulting: '正在咨询塔罗……',
       loadingTitle: '正在汇聚以太流',
       loadingBody: (spreadName: string) =>
-        `请稍作冥想，Google Gemini AI 正在解析你的 ${spreadName} 牌阵，并生成你的专属灵性解读……`,
+        `请稍作冥想，智谱 GLM 正在解析你的 ${spreadName} 牌阵，并生成你的专属灵性解读……`,
       errorTitle: '占卜中断',
       retry: '重试咨询',
       fallbackError: '占卜连接刚刚受到干扰，请稍后重试。',
-      consultationError: '咨询失败。请确认 Gemini API 密钥已正确配置。',
+      consultationError: '咨询失败。请确认 GLM API key 已正确填写。',
       positions: [
         '1. 现状',
         '2. 阻力',
@@ -390,10 +407,26 @@ export const UI_COPY = {
       homeTitle: 'Home',
       resetTitle: 'Reset Reading',
       historyTitle: 'Readings Archive',
-      guidanceTitle: 'Oracle Guidance',
-      guidanceAlert:
-        'Space Tarot v2.0 - Powered by Google Gemini AI\nFocus your energy, select your spread, draw your cards, and read live spiritual interpretations.',
+      aiSettingsTitle: 'AI Settings',
       languageLabel: '中文',
+    },
+    aiSettings: {
+      title: 'AI Settings',
+      subtitle: 'Zhipu GLM',
+      modelLabel: 'AI Model',
+      apiKeyLabel: 'API key',
+      apiKeyPlaceholder: 'Enter your GLM API key',
+      apiKeyLink: 'Create GLM API key (free)',
+      unlockTitle: 'Unlock to edit model',
+      lockTitle: 'Lock model',
+      cancel: 'Cancel',
+      save: 'Save',
+    },
+    questionPrompt: {
+      title: 'Ask the Oracle',
+      placeholder: 'What would you like to ask? e.g. What comes next in this relationship...',
+      cancel: 'Cancel',
+      send: 'Send',
     },
     spreadSelection: {
       title: 'Select Your Spread',
@@ -416,6 +449,7 @@ export const UI_COPY = {
       empty: 'Empty Slot',
       label: 'Inscribe Your Focus or Query (Optional)',
       placeholder: 'What secrets are you seeking? e.g. My career path...',
+      confirmQuestionTitle: 'Confirm question',
       title: 'Choose Your Cards',
       drawMore: (remaining: number, spreadName: string, positionName: string) =>
         `Draw ${remaining} more card${remaining === 1 ? '' : 's'} for ${spreadName}: "${positionName}"`,
@@ -442,12 +476,12 @@ export const UI_COPY = {
       consulting: 'CONSULTING THE ORACLE...',
       loadingTitle: 'GATHERING THE ETHEREAL CURRENTS',
       loadingBody: (spreadName: string) =>
-        `Please sit in brief contemplation while Google Gemini AI analyzes your ${spreadName} constellation and shapes your custom spiritual reading...`,
+        `Please sit in brief contemplation while Zhipu GLM analyzes your ${spreadName} constellation and shapes your custom spiritual reading...`,
       errorTitle: 'Divination Disrupted',
       retry: 'Retry Consultation',
       fallbackError: 'The Oracle was momentarily disrupted. Please retry.',
       consultationError:
-        'Consultation failed. Make sure your Gemini API key secrets are correctly set.',
+        'Consultation failed. Make sure your GLM API key is correctly set.',
       positions: [
         '1. Present',
         '2. Obstacle',

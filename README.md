@@ -8,11 +8,8 @@
    npm install
    ```
 
-2. 如果要使用 AI 解读功能，在 `.env.local` 里设置 Gemini API key：
-
-   ```bash
-   GEMINI_API_KEY=your_key_here
-   ```
+2. 如果要使用 AI 解读功能，在网站右上角的 AI 设置里填写 GLM API key。
+   API key 会保存在当前浏览器的 `localStorage`，同一浏览器下次打开可继续使用。
 
 3. 启动开发环境：
 

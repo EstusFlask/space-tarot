@@ -7,9 +7,11 @@ import CardRevealView from './components/CardRevealView';
 import OracleChatView from './components/OracleChatView';
 import ReadingsArchive from './components/ReadingsArchive';
 import PageTransition from './components/PageTransition';
+import AISettingsDialog from './components/AISettingsDialog';
 import { TarotScreen, DrawnCard } from './types';
 import { TarotSpread } from './data/tarotCards';
 import { DEFAULT_LANGUAGE, Language } from './data/localization';
+import { AISettings, readAISettings, saveAISettings } from './utils/aiSettings';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<TarotScreen>('spread_selection');
@@ -18,6 +20,8 @@ export default function App() {
   const [question, setQuestion] = useState('');
   const [preloadedAIAnalysis, setPreloadedAIAnalysis] = useState('');
   const [showArchive, setShowArchive] = useState(false);
+  const [showAISettings, setShowAISettings] = useState(false);
+  const [aiSettings, setAISettings] = useState<AISettings>(() => readAISettings());
   const [language, setLanguage] = useState<Language>(() => {
     try {
       const storedLanguage = localStorage.getItem('tarot-language');
@@ -43,9 +47,19 @@ export default function App() {
     setCurrentScreen('reveal');
   };
 
-  const handleProceedToChat = (analysis: string) => {
+  const handleProceedToChat = (analysis: string, nextQuestion?: string) => {
+    if (nextQuestion !== undefined) {
+      setQuestion(nextQuestion);
+    }
+
     setPreloadedAIAnalysis(analysis);
     setCurrentScreen('chat');
+  };
+
+  const handleSaveAISettings = (nextSettings: AISettings) => {
+    saveAISettings(nextSettings);
+    setAISettings(nextSettings);
+    setShowAISettings(false);
   };
 
   const handleResetReading = () => {
@@ -92,6 +106,8 @@ export default function App() {
             question={question}
             onProceedToChat={handleProceedToChat}
             language={language}
+            aiSettings={aiSettings}
+            onOpenAISettings={() => setShowAISettings(true)}
           />
         ) : null;
 
@@ -104,6 +120,8 @@ export default function App() {
             question={question}
             onReset={handleNavigateHome}
             language={language}
+            aiSettings={aiSettings}
+            onOpenAISettings={() => setShowAISettings(true)}
           />
         ) : null;
 
@@ -126,6 +144,7 @@ export default function App() {
         onShowHistory={() => setShowArchive(true)}
         language={language}
         onToggleLanguage={handleToggleLanguage}
+        onOpenAISettings={() => setShowAISettings(true)}
       />
 
       {/* Main Content Area Container with padding for floating action bars */}
@@ -137,6 +156,14 @@ export default function App() {
       {showArchive && (
         <ReadingsArchive onClose={() => setShowArchive(false)} language={language} />
       )}
+
+      <AISettingsDialog
+        open={showAISettings}
+        settings={aiSettings}
+        language={language}
+        onCancel={() => setShowAISettings(false)}
+        onSave={handleSaveAISettings}
+      />
 
     </div>
   );
