@@ -39,7 +39,7 @@ function getCopy(language: Language) {
         essence: '核心含义',
         upright: '正位',
         reversed: '逆位',
-        fallback: '塔罗师正在静心冥想，请重新抽牌后再试。',
+        fallback: '塔罗师正在静心冥想，请重试。',
         missingKey: '请先填写 GLM API key。',
         invalidCards: 'cardsDrawn 数组是必需的。',
         keepAnalyzing: '请继续解读我的牌阵。',
@@ -61,6 +61,10 @@ function getCopy(language: Language) {
         initialPrompt: 'Please provide the complete tarot reading for this draw.',
         error: 'An error occurred when consulting Zhipu GLM. Check your API key or retry later.',
       };
+}
+
+export function getTarotFallbackText(language: Language) {
+  return getCopy(language).fallback;
 }
 
 function buildCardsDescription(cardsDrawn: TarotAICard[], language: Language) {

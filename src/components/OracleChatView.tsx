@@ -2,11 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, DrawnCard } from '../types';
 import { getLocalizedCardName, getTarotImageByName, TarotSpread } from '../data/tarotCards';
 import ReactMarkdown from 'react-markdown';
-import { Send, Sparkles, Download, CheckCircle, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Send, Sparkles, Download, CheckCircle, RefreshCw, ArrowLeft, RotateCcw } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
 import type { AISettings } from '../utils/aiSettings';
 import { hasAIKey } from '../utils/aiSettings';
-import { requestTarotInterpretation } from '../utils/glmClient';
+import { getTarotFallbackText, requestTarotInterpretation } from '../utils/glmClient';
 import ViewportPortal from './ViewportPortal';
 import RetryingImage from './RetryingImage';
 
@@ -44,6 +44,8 @@ export default function OracleChatView({
   const copy = UI_COPY[language].oracleChat;
   const commonCopy = UI_COPY[language].common;
   const localizedSpread = getLocalizedSpread(spread, language);
+  const fallbackText = getTarotFallbackText(language);
+  const retryFallbackLabel = language === 'zh' ? '重新询问' : 'Ask again';
   const localizeKeyword = (keyword: string, cardName: string) => {
     if (keyword === cardName) {
       return getLocalizedCardName(cardName, language);
@@ -59,20 +61,36 @@ export default function OracleChatView({
 
     return keyword;
   };
+  const getTimestamp = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const createAIMessage = (text: string, retryText?: string, id = `ai-${Date.now()}`): ChatMessage => {
+    const isFallback = text === fallbackText;
+
+    return {
+      id,
+      role: 'ai',
+      text,
+      timestamp: getTimestamp(),
+      isFallback,
+      retryText: isFallback ? retryText : undefined,
+    };
+  };
+  const attachFallbackRetry = (message: ChatMessage): ChatMessage => {
+    if (message.role !== 'ai' || message.text !== fallbackText) return message;
+
+    return {
+      ...message,
+      isFallback: true,
+      retryText: typeof message.retryText === 'string' ? message.retryText : question,
+    };
+  };
   const [messages, setMessages] = useState<ChatMessage[]>(() => (
     storedMessages.length
-      ? storedMessages
-      : [
-          {
-            id: 'init-oracle',
-            role: 'ai',
-            text: initialAnalysis,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          },
-        ]
+      ? storedMessages.map(attachFallbackRetry)
+      : [createAIMessage(initialAnalysis, question, 'init-oracle')]
   ));
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [retryingMessageId, setRetryingMessageId] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
@@ -86,8 +104,41 @@ export default function OracleChatView({
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  const handleSendMessage = async (textToSend: string) => {
-    if (!textToSend.trim() || isLoading) return;
+  const requestAIMessage = async (textToSend: string, historyMessages: ChatMessage[], id?: string) => {
+    const payload = {
+      spreadName: localizedSpread.name,
+      question: textToSend,
+      language,
+      cardsDrawn: drawnCards.map(dc => ({
+        name: dc.card.name,
+        displayName: getLocalizedCardName(dc.card.name, language),
+        positionName: localizedSpread.positions[dc.positionIndex]?.name ?? dc.positionName,
+        isUpright: dc.isUpright,
+        keywords: (dc.isUpright ? dc.card.uprightKeywords : dc.card.reversedKeywords).map(k =>
+          localizeKeyword(k, dc.card.name),
+        ),
+        arcana: getLocalizedArcanaLabel(dc.card, language),
+        description: dc.card.description,
+      })),
+      history: historyMessages
+        .filter(msg => !msg.isFallback)
+        .map(msg => ({
+          role: msg.role,
+          text: msg.text,
+        })),
+    };
+
+    const interpretation = await requestTarotInterpretation({
+      ...payload,
+      settings: aiSettings,
+    });
+
+    return createAIMessage(interpretation, textToSend, id);
+  };
+
+  const handleSendMessage = async (rawTextToSend: string) => {
+    const textToSend = rawTextToSend.trim();
+    if (!textToSend || isLoading) return;
 
     if (!hasAIKey(aiSettings)) {
       onOpenAISettings();
@@ -98,50 +149,16 @@ export default function OracleChatView({
       id: `user-${Date.now()}`,
       role: 'user',
       text: textToSend,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: getTimestamp(),
     };
+    const historyMessages = messages;
 
     setMessages(prev => [...prev, userMsg]);
     setUserInput('');
     setIsLoading(true);
 
     try {
-      // Package conversation history for the server
-      const chatHistory = messages.map(msg => ({
-        role: msg.role,
-        text: msg.text,
-      }));
-
-      const payload = {
-        spreadName: localizedSpread.name,
-        question: textToSend,
-        language,
-        cardsDrawn: drawnCards.map(dc => ({
-          name: dc.card.name,
-          displayName: getLocalizedCardName(dc.card.name, language),
-          positionName: localizedSpread.positions[dc.positionIndex]?.name ?? dc.positionName,
-          isUpright: dc.isUpright,
-          keywords: (dc.isUpright ? dc.card.uprightKeywords : dc.card.reversedKeywords).map(k =>
-            localizeKeyword(k, dc.card.name),
-          ),
-          arcana: getLocalizedArcanaLabel(dc.card, language),
-          description: dc.card.description,
-        })),
-        history: chatHistory,
-      };
-
-      const interpretation = await requestTarotInterpretation({
-        ...payload,
-        settings: aiSettings,
-      });
-
-      const aiMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        role: 'ai',
-        text: interpretation,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
+      const aiMsg = await requestAIMessage(textToSend, historyMessages);
       setMessages(prev => [...prev, aiMsg]);
     } catch (err: any) {
       console.error(err);
@@ -149,11 +166,56 @@ export default function OracleChatView({
         id: `err-${Date.now()}`,
         role: 'ai',
         text: copy.errorText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: getTimestamp(),
       };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRetryFallback = async (message: ChatMessage) => {
+    if (isLoading || typeof message.retryText !== 'string') return;
+
+    if (!hasAIKey(aiSettings)) {
+      onOpenAISettings();
+      return;
+    }
+
+    const messageIndex = messages.findIndex(item => item.id === message.id);
+    if (messageIndex === -1) return;
+
+    const retryHistory = messages.slice(0, messageIndex);
+    const previousMessage = retryHistory[retryHistory.length - 1];
+    const historyMessages =
+      previousMessage?.role === 'user' && previousMessage.text === message.retryText
+        ? retryHistory.slice(0, -1)
+        : retryHistory;
+
+    setIsLoading(true);
+    setRetryingMessageId(message.id);
+
+    try {
+      const aiMsg = await requestAIMessage(message.retryText, historyMessages, message.id);
+      setMessages(prev => prev.map(item => (item.id === message.id ? aiMsg : item)));
+    } catch (err: any) {
+      console.error(err);
+      setMessages(prev =>
+        prev.map(item =>
+          item.id === message.id
+            ? {
+                ...item,
+                text: copy.errorText,
+                timestamp: getTimestamp(),
+                isFallback: false,
+                retryText: undefined,
+              }
+            : item,
+        ),
+      );
+    } finally {
+      setIsLoading(false);
+      setRetryingMessageId(null);
     }
   };
 
@@ -277,6 +339,7 @@ export default function OracleChatView({
         {/* Message bubbles list */}
         {messages.map(msg => {
           const isAi = msg.role === 'ai';
+          const canRetryFallback = isAi && msg.isFallback && typeof msg.retryText === 'string';
           return (
             <div
               key={msg.id}
@@ -288,13 +351,14 @@ export default function OracleChatView({
                 {isAi ? copy.analyst : copy.querent} · {msg.timestamp}
               </span>
 
-              <div
-                className={`rounded-2xl px-5 py-4 text-sm leading-relaxed relative ${
-                  isAi
-                    ? 'glass-panel border-l-2 border-[#fface8]/65 text-[#dfe2f3]'
-                    : 'bg-gradient-to-br from-[#1b1f2c] to-[#0f131f] border border-[#a5e7ff]/30 text-[#dfe2f3] shadow-[0_0_15px_rgba(165,231,255,0.08)]'
-                }`}
-              >
+              <div className={`flex items-start gap-2 ${isAi ? 'justify-start' : 'justify-end'}`}>
+                <div
+                  className={`rounded-2xl px-5 py-4 text-sm leading-relaxed relative max-w-full ${
+                    isAi
+                      ? 'glass-panel border-l-2 border-[#fface8]/65 text-[#dfe2f3]'
+                      : 'bg-gradient-to-br from-[#1b1f2c] to-[#0f131f] border border-[#a5e7ff]/30 text-[#dfe2f3] shadow-[0_0_15px_rgba(165,231,255,0.08)]'
+                  }`}
+                >
                 {isAi && <div className="noise-overlay" />}
 
                 <div className={`markdown-body select-text ${isAi ? 'space-y-3' : 'white-space-pre-wrap'}`}>
@@ -334,13 +398,31 @@ export default function OracleChatView({
                     msg.text
                   )}
                 </div>
+                </div>
+
+                {canRetryFallback && (
+                  <button
+                    type="button"
+                    aria-label={retryFallbackLabel}
+                    title={retryFallbackLabel}
+                    onClick={() => handleRetryFallback(msg)}
+                    disabled={isLoading}
+                    className="mt-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#fface8]/35 bg-[#fface8]/10 text-[#fface8] transition-all hover:bg-[#fface8]/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {retryingMessageId === msg.id ? (
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           );
         })}
 
         {/* Typing indicator from the Oracle */}
-        {isLoading && (
+        {isLoading && !retryingMessageId && (
           <div className="self-start text-left flex flex-col gap-1 max-w-[80%] mb-2">
             <span className="text-[9px] font-sans font-bold tracking-widest text-[#bbc9cf]/40 uppercase px-1.5">
               {copy.meditating}

@@ -38,12 +38,22 @@ http://localhost:3000
 
 ## 填写牌面介绍
 
-牌面图片和牌名会从 `images/tarots` 自动读取。文件名里的 `_` 会变成空格，例如：
+牌面图片实际读取的是 `src/generated/tarots/*.webp`，不是直接读取 `images/tarots`。当前仓库里的 `webp` 已经是预先生成好的静态资源，`npm run build` 只是把它们打包进应用。
+
+源图片保留在 `images/tarots/*.png`，如果你要重新导出牌面图，可以从这里开始处理。生成后的文件名会把 `_` 视为空格，例如：
 
 ```text
-images/tarots/The_Fool.png -> The Fool
-images/tarots/Five_of_Cups.png -> Five of Cups
+src/generated/tarots/The_Fool.webp -> The Fool
+src/generated/tarots/Five_of_Cups.webp -> Five of Cups
 ```
+
+重新生成牌面 webp：
+
+```bash
+npm run generate:tarots
+```
+
+这个脚本会读取 `images/tarots/*.png`，缩放到 900px 宽，并输出到 `src/generated/tarots/*.webp`。生成前会清空 `src/generated/tarots` 里的旧 `webp`，避免已删除的源图继续被应用读取。
 
 每张牌的介绍文字放在 `src/data/cardDescriptions.ts`。你只需要找到对应牌名，把 `description` 填进去即可：
 

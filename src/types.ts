@@ -21,4 +21,6 @@ export interface ChatMessage {
   role: 'ai' | 'user';
   text: string;
   timestamp: string;
+  isFallback?: boolean;
+  retryText?: string;
 }
