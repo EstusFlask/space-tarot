@@ -12,6 +12,7 @@ import { TarotScreen, DrawnCard, ChatMessage } from './types';
 import { getTarotImageByName, TarotSpread } from './data/tarotCards';
 import { DEFAULT_LANGUAGE, Language } from './data/localization';
 import { AISettings, readAISettings, saveAISettings } from './utils/aiSettings';
+import { AssetRefreshContext } from './utils/assetRefresh';
 import { buildReadingSnapshotFilename, downloadElementAsPng } from './utils/downloadSnapshot';
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
   const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
   const [showAISettings, setShowAISettings] = useState(false);
   const [aiSettings, setAISettings] = useState<AISettings>(() => readAISettings());
+  const [assetRefreshKey, setAssetRefreshKey] = useState(0);
   const snapshotRef = useRef<HTMLDivElement | null>(null);
   const [language, setLanguage] = useState<Language>(() => {
     try {
@@ -90,16 +92,8 @@ export default function App() {
     setShowAISettings(false);
   };
 
-  const handleResetReading = () => {
-    if (confirm('Are you sure you want to clear your current reading and selection?')) {
-      setSelectedSpread(null);
-      setDrawnCards([]);
-      setQuestion('');
-      setPreloadedAIAnalysis('');
-      setAllCardsRevealed(false);
-      setChatMessages([]);
-      setCurrentScreen('spread_selection');
-    }
+  const handleRefreshPage = () => {
+    setAssetRefreshKey(currentKey => currentKey + 1);
   };
 
   const handleNavigateHome = () => {
@@ -203,7 +197,8 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen text-[#dfe2f3] select-none">
+    <AssetRefreshContext.Provider value={assetRefreshKey}>
+      <div className="relative min-h-screen text-[#dfe2f3] select-none">
       
       {/* Immersive WebGL Shader Backdrop */}
       <NebulaBackground />
@@ -212,7 +207,7 @@ export default function App() {
       <Header
         currentScreen={currentScreen}
         onNavigateHome={handleNavigateHome}
-        onResetReading={currentScreen !== 'spread_selection' ? handleResetReading : undefined}
+        onResetReading={currentScreen !== 'spread_selection' ? handleRefreshPage : undefined}
         onSaveReading={handleSaveReadingSnapshot}
         canSaveReading={canSaveReading}
         isSavingReading={isSavingSnapshot}
@@ -250,6 +245,7 @@ export default function App() {
         onSave={handleSaveAISettings}
       />
 
-    </div>
+      </div>
+    </AssetRefreshContext.Provider>
   );
 }

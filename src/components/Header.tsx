@@ -1,5 +1,5 @@
 import { TarotScreen } from '../types';
-import { Home, Sparkles, Download, RotateCcw, Settings, RefreshCw } from 'lucide-react';
+import { Home, Sparkles, Download, Settings, RefreshCw } from 'lucide-react';
 import { Language, UI_COPY } from '../data/localization';
 
 interface HeaderProps {
@@ -50,7 +50,7 @@ export default function Header({
                 title={copy.resetTitle}
                 className="glass-panel rounded-full p-2 flex items-center justify-center text-[#fface8] hover:drop-shadow-[0_0_8px_rgba(255,172,232,0.8)] transition-all active:scale-95 duration-200 cursor-pointer"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RefreshCw className="w-4 h-4" />
               </button>
             )}
           </div>

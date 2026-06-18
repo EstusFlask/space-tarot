@@ -271,7 +271,7 @@ export const UI_COPY = {
     header: {
       title: '星空塔罗',
       homeTitle: '返回首页',
-      resetTitle: '重置解读',
+      resetTitle: '刷新页面',
       historyTitle: '保存占卜截图',
       saveTitle: '保存占卜截图',
       saveDisabledTitle: '翻开所有卡牌后可保存',
@@ -409,7 +409,7 @@ export const UI_COPY = {
     header: {
       title: 'Space Tarot',
       homeTitle: 'Home',
-      resetTitle: 'Reset Reading',
+      resetTitle: 'Refresh Page',
       historyTitle: 'Save Reading Screenshot',
       saveTitle: 'Save Reading Screenshot',
       saveDisabledTitle: 'Reveal all cards before saving',
