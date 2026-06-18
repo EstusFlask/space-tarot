@@ -4,24 +4,23 @@ function waitForNextFrame() {
   return new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 }
 
+async function waitForImage(image: HTMLImageElement) {
+  if (!image.complete || image.naturalWidth === 0) {
+    await new Promise<void>(resolve => {
+      const done = () => resolve();
+      image.addEventListener('load', done, { once: true });
+      image.addEventListener('error', done, { once: true });
+    });
+  }
+
+  if (image.complete && image.naturalWidth > 0 && 'decode' in image) {
+    await image.decode().catch(() => undefined);
+  }
+}
+
 async function waitForImages(root: HTMLElement) {
   const images = Array.from(root.querySelectorAll('img'));
-
-  await Promise.all(
-    images.map(
-      image =>
-        new Promise<void>(resolve => {
-          if (image.complete && image.naturalWidth > 0) {
-            resolve();
-            return;
-          }
-
-          const done = () => resolve();
-          image.addEventListener('load', done, { once: true });
-          image.addEventListener('error', done, { once: true });
-        }),
-    ),
-  );
+  await Promise.all(images.map(waitForImage));
 }
 
 export function buildReadingSnapshotFilename(spreadName: string) {
@@ -41,10 +40,11 @@ export async function downloadElementAsPng(element: HTMLElement, filename: strin
   await waitForNextFrame();
   await document.fonts?.ready;
   await waitForImages(element);
+  await waitForNextFrame();
 
   const dataUrl = await toPng(element, {
     backgroundColor: '#0f131f',
-    cacheBust: true,
+    fetchRequestInit: { cache: 'force-cache' },
     pixelRatio: 2,
     skipFonts: true,
   });

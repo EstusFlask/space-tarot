@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, DrawnCard } from '../types';
-import { getLocalizedCardName, TarotSpread } from '../data/tarotCards';
+import { getLocalizedCardName, getTarotImageByName, TarotSpread } from '../data/tarotCards';
 import ReactMarkdown from 'react-markdown';
-import { Send, Sparkles, Download, CheckCircle, RefreshCw } from 'lucide-react';
+import { Send, Sparkles, Download, CheckCircle, RefreshCw, ArrowLeft } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
 import type { AISettings } from '../utils/aiSettings';
 import { hasAIKey } from '../utils/aiSettings';
 import { requestTarotInterpretation } from '../utils/glmClient';
 import ViewportPortal from './ViewportPortal';
+import RetryingImage from './RetryingImage';
 
 interface OracleChatViewProps {
   spread: TarotSpread;
@@ -18,9 +19,11 @@ interface OracleChatViewProps {
   language: Language;
   aiSettings: AISettings;
   onOpenAISettings: () => void;
+  storedMessages: ChatMessage[];
   onMessagesChange: (messages: ChatMessage[]) => void;
   onSaveReading: () => Promise<boolean> | boolean;
   isSavingReading: boolean;
+  onReturnToSpread: () => void;
 }
 
 export default function OracleChatView({
@@ -32,9 +35,11 @@ export default function OracleChatView({
   language,
   aiSettings,
   onOpenAISettings,
+  storedMessages,
   onMessagesChange,
   onSaveReading,
   isSavingReading,
+  onReturnToSpread,
 }: OracleChatViewProps) {
   const copy = UI_COPY[language].oracleChat;
   const commonCopy = UI_COPY[language].common;
@@ -54,14 +59,18 @@ export default function OracleChatView({
 
     return keyword;
   };
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'init-oracle',
-      role: 'ai',
-      text: initialAnalysis,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => (
+    storedMessages.length
+      ? storedMessages
+      : [
+          {
+            id: 'init-oracle',
+            role: 'ai',
+            text: initialAnalysis,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]
+  ));
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -188,7 +197,15 @@ export default function OracleChatView({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 relative z-20 w-full md:w-auto shrink-0 justify-end">
+        <div className="flex flex-wrap items-center gap-2 relative z-20 w-full md:w-auto shrink-0 justify-center md:justify-end">
+          <button
+            onClick={onReturnToSpread}
+            className="px-4 py-2 rounded-full border border-[#a5e7ff]/25 text-[#a5e7ff] hover:bg-[#a5e7ff]/10 transition-all text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            {copy.backToSpread}
+          </button>
+
           <button
             onClick={handleSaveReading}
             disabled={isLoading || isSavingSnapshot || isSavingReading || isSaved}
@@ -235,7 +252,15 @@ export default function OracleChatView({
               key={i}
               className="flex items-center gap-2 bg-[#1b1f2c]/55 border border-white/[0.04] rounded-lg px-3 py-1.5 text-left"
             >
-              <div className="w-1.5 h-1.5 rounded-full bg-[#a5e7ff]" />
+              <div className="h-12 w-8 shrink-0 overflow-hidden rounded border border-white/10 bg-black/20">
+                <RetryingImage
+                  src={getTarotImageByName(dc.card.name)}
+                  alt={getLocalizedCardName(dc.card.name, language)}
+                  draggable={false}
+                  decoding="async"
+                  className={`h-full w-full object-contain ${dc.isUpright ? '' : 'rotate-180'}`}
+                />
+              </div>
               <div>
                 <span className="text-[8px] text-gray-500 font-bold uppercase block leading-none">
                   {localizedSpread.positions[i]?.name ?? dc.positionName}

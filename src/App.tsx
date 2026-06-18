@@ -9,7 +9,7 @@ import ReadingSnapshot from './components/ReadingSnapshot';
 import PageTransition from './components/PageTransition';
 import AISettingsDialog from './components/AISettingsDialog';
 import { TarotScreen, DrawnCard, ChatMessage } from './types';
-import { TarotSpread } from './data/tarotCards';
+import { getTarotImageByName, TarotSpread } from './data/tarotCards';
 import { DEFAULT_LANGUAGE, Language } from './data/localization';
 import { AISettings, readAISettings, saveAISettings } from './utils/aiSettings';
 import { buildReadingSnapshotFilename, downloadElementAsPng } from './utils/downloadSnapshot';
@@ -39,6 +39,18 @@ export default function App() {
     localStorage.setItem('tarot-language', language);
     document.documentElement.lang = language;
   }, [language]);
+
+  useEffect(() => {
+    drawnCards.forEach(({ card }) => {
+      const imageSrc = getTarotImageByName(card.name);
+      if (!imageSrc) return;
+
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = imageSrc;
+      void image.decode().catch(() => undefined);
+    });
+  }, [drawnCards]);
 
   const handleSelectSpread = (spread: TarotSpread) => {
     setSelectedSpread(spread);
@@ -100,6 +112,11 @@ export default function App() {
     setCurrentScreen('spread_selection');
   };
 
+  const handleReturnToSpread = () => {
+    setAllCardsRevealed(true);
+    setCurrentScreen('reveal');
+  };
+
   const handleToggleLanguage = () => {
     setLanguage(current => (current === 'zh' ? 'en' : 'zh'));
   };
@@ -155,6 +172,9 @@ export default function App() {
             aiSettings={aiSettings}
             onOpenAISettings={() => setShowAISettings(true)}
             onRevealStatusChange={setAllCardsRevealed}
+            initialAllRevealed={allCardsRevealed}
+            hasExistingOracleSession={chatMessages.length > 0 && Boolean(preloadedAIAnalysis)}
+            onReturnToChat={() => setCurrentScreen('chat')}
           />
         ) : null;
 
@@ -169,9 +189,11 @@ export default function App() {
             language={language}
             aiSettings={aiSettings}
             onOpenAISettings={() => setShowAISettings(true)}
+            storedMessages={chatMessages}
             onMessagesChange={setChatMessages}
             onSaveReading={handleSaveReadingSnapshot}
             isSavingReading={isSavingSnapshot}
+            onReturnToSpread={handleReturnToSpread}
           />
         ) : null;
 

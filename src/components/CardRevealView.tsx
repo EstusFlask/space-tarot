@@ -20,6 +20,9 @@ interface CardRevealViewProps {
   aiSettings: AISettings;
   onOpenAISettings: () => void;
   onRevealStatusChange: (allCardsRevealed: boolean) => void;
+  initialAllRevealed: boolean;
+  hasExistingOracleSession: boolean;
+  onReturnToChat: () => void;
 }
 
 export default function CardRevealView({
@@ -31,8 +34,13 @@ export default function CardRevealView({
   aiSettings,
   onOpenAISettings,
   onRevealStatusChange,
+  initialAllRevealed,
+  hasExistingOracleSession,
+  onReturnToChat,
 }: CardRevealViewProps) {
-  const [flipped, setFlipped] = useState<number[]>([]);
+  const [flipped, setFlipped] = useState<number[]>(() => (
+    initialAllRevealed ? drawnCards.map((_, index) => index) : []
+  ));
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -105,6 +113,11 @@ export default function CardRevealView({
   };
 
   const handleConsultOracle = async () => {
+    if (hasExistingOracleSession) {
+      onReturnToChat();
+      return;
+    }
+
     if (!hasAIKey(aiSettings)) {
       setAiError(null);
       onOpenAISettings();
