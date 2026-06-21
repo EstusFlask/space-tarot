@@ -9,20 +9,113 @@ import ReadingSnapshot from './components/ReadingSnapshot';
 import PageTransition from './components/PageTransition';
 import AISettingsDialog from './components/AISettingsDialog';
 import { TarotScreen, DrawnCard, ChatMessage } from './types';
-import { getTarotImageByName, TarotSpread } from './data/tarotCards';
+import { getTarotImageByName, TAROT_DECK, TAROT_SPREADS, TarotSpread } from './data/tarotCards';
 import { DEFAULT_LANGUAGE, Language } from './data/localization';
 import { AISettings, readAISettings, saveAISettings } from './utils/aiSettings';
 import { AssetRefreshContext } from './utils/assetRefresh';
 import { buildReadingSnapshotFilename, downloadElementAsPng } from './utils/downloadSnapshot';
 
+interface DevDebugReading {
+  spread: TarotSpread;
+  drawnCards: DrawnCard[];
+  question: string;
+  analysis: string;
+  messages: ChatMessage[];
+}
+
+function getDevDebugReading(): DevDebugReading | null {
+  if (!import.meta.env.DEV || typeof window === 'undefined') {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const debugTarget = params.get('debug');
+  const isDebugChat =
+    debugTarget === 'chat' ||
+    debugTarget === 'oracle' ||
+    window.location.pathname.endsWith('/debug/chat');
+
+  if (!isDebugChat) {
+    return null;
+  }
+
+  const requestedSpreadId = params.get('spread') ?? 'threecard';
+  const spread =
+    TAROT_SPREADS.find(item => item.id === requestedSpreadId) ??
+    TAROT_SPREADS.find(item => item.id === 'threecard') ??
+    TAROT_SPREADS[0];
+
+  if (!spread || TAROT_DECK.length === 0) {
+    return null;
+  }
+
+  const fallbackCardNames = [
+    'The Fool',
+    'The High Priestess',
+    'The Star',
+    'Temperance',
+    'The World',
+    'Strength',
+    'Justice',
+    'The Moon',
+    'The Sun',
+    'Wheel of Fortune',
+  ];
+  const requestedCardNames = (params.get('cards') ?? '')
+    .split(',')
+    .map(name => name.trim())
+    .filter(Boolean);
+  const debugCardNames = requestedCardNames.length ? requestedCardNames : fallbackCardNames;
+  const pickedCards = debugCardNames
+    .map(name => TAROT_DECK.find(card => card.name.toLowerCase() === name.toLowerCase()))
+    .filter((card): card is (typeof TAROT_DECK)[number] => Boolean(card));
+  const remainingCards = TAROT_DECK.filter(card => !pickedCards.includes(card));
+  const debugCards = [...pickedCards, ...remainingCards].slice(0, spread.cardCount);
+
+  const drawnCards: DrawnCard[] = debugCards.map((card, index) => {
+    const position = spread.positions[index];
+    const isUpright = index % 3 !== 1;
+    const orientation: DrawnCard['orientation'] = isUpright ? 'upright' : 'reversed';
+
+    return {
+      card,
+      orientation,
+      isUpright,
+      positionIndex: index,
+      positionName: position?.name ?? `Card ${index + 1}`,
+      positionDesc: position?.description ?? '',
+    };
+  });
+
+  const question = params.get('q')?.trim() || '调试模式：我现在最需要看清什么？';
+  const analysis = [
+    '## 调试模式占位解读',
+    '',
+    '这是 dev 模式直接进入 AI 解析页的本地调试内容，用来检查聊天框、放牌框、滚动区和输入区的视觉状态。',
+    '',
+    '如果需要指定牌阵或牌，可以使用 `spread=threecard` 和 `cards=The Fool,The Star,Temperance`。',
+  ].join('\n');
+  const messages: ChatMessage[] = [
+    {
+      id: 'debug-oracle',
+      role: 'ai',
+      text: analysis,
+      timestamp: 'Debug',
+    },
+  ];
+
+  return { spread, drawnCards, question, analysis, messages };
+}
+
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<TarotScreen>('spread_selection');
-  const [selectedSpread, setSelectedSpread] = useState<TarotSpread | null>(null);
-  const [drawnCards, setDrawnCards] = useState<DrawnCard[]>([]);
-  const [question, setQuestion] = useState('');
-  const [preloadedAIAnalysis, setPreloadedAIAnalysis] = useState('');
-  const [allCardsRevealed, setAllCardsRevealed] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const debugReading = getDevDebugReading();
+  const [currentScreen, setCurrentScreen] = useState<TarotScreen>(debugReading ? 'chat' : 'spread_selection');
+  const [selectedSpread, setSelectedSpread] = useState<TarotSpread | null>(debugReading?.spread ?? null);
+  const [drawnCards, setDrawnCards] = useState<DrawnCard[]>(debugReading?.drawnCards ?? []);
+  const [question, setQuestion] = useState(debugReading?.question ?? '');
+  const [preloadedAIAnalysis, setPreloadedAIAnalysis] = useState(debugReading?.analysis ?? '');
+  const [allCardsRevealed, setAllCardsRevealed] = useState(Boolean(debugReading));
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(debugReading?.messages ?? []);
   const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
   const [showAISettings, setShowAISettings] = useState(false);
   const [aiSettings, setAISettings] = useState<AISettings>(() => readAISettings());

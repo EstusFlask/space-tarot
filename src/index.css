@@ -105,10 +105,27 @@ body {
 }
 
 /* Custom Scrollbars */
+.oracle-clean-panel {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background-clip: padding-box;
+  box-shadow: none;
+  isolation: isolate;
+}
+
+.oracle-chat-stream {
+  background: transparent;
+  scrollbar-color: rgba(165, 231, 255, 0.3) transparent;
+}
+
 .chat-scroll::-webkit-scrollbar {
   width: 5px;
 }
 .chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-scroll::-webkit-scrollbar-track-piece,
+.chat-scroll::-webkit-scrollbar-corner {
   background: transparent;
 }
 .chat-scroll::-webkit-scrollbar-thumb {

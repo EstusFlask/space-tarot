@@ -306,9 +306,9 @@ export default function OracleChatView({
       </div>
 
       {/* Main Chat Conversation Stream container */}
-      <div className="flex-1 overflow-y-auto px-4 pb-32 pt-2 gap-4 flex flex-col chat-scroll">
+      <div className="oracle-chat-stream flex-1 overflow-y-auto px-4 pb-32 pt-2 gap-4 flex flex-col chat-scroll">
         {/* Draw cards presentation summary for quick references */}
-        <div className="glass-panel border border-white/5 rounded-xl p-4 flex flex-wrap gap-2.5 justify-center items-center shrink-0 mb-2">
+        <div className="glass-panel oracle-clean-panel border border-white/5 rounded-xl p-4 flex flex-wrap gap-2.5 justify-center items-center shrink-0 mb-2 relative overflow-hidden">
           {drawnCards.map((dc, i) => (
             <div
               key={i}
@@ -353,15 +353,15 @@ export default function OracleChatView({
 
               <div className={`flex items-start gap-2 ${isAi ? 'justify-start' : 'justify-end'}`}>
                 <div
-                  className={`rounded-2xl px-5 py-4 text-sm leading-relaxed relative max-w-full ${
+                  className={`rounded-2xl px-5 py-4 text-sm leading-relaxed relative overflow-hidden max-w-full ${
                     isAi
-                      ? 'glass-panel border-l-2 border-[#fface8]/65 text-[#dfe2f3]'
+                      ? 'glass-panel oracle-clean-panel border-l-2 border-[#fface8]/65 text-[#dfe2f3]'
                       : 'bg-gradient-to-br from-[#1b1f2c] to-[#0f131f] border border-[#a5e7ff]/30 text-[#dfe2f3] shadow-[0_0_15px_rgba(165,231,255,0.08)]'
                   }`}
                 >
                 {isAi && <div className="noise-overlay" />}
 
-                <div className={`markdown-body select-text ${isAi ? 'space-y-3' : 'white-space-pre-wrap'}`}>
+                <div className={`markdown-body select-text relative z-20 ${isAi ? 'space-y-3' : 'white-space-pre-wrap'}`}>
                   {isAi ? (
                     <ReactMarkdown
                       components={{
@@ -427,7 +427,7 @@ export default function OracleChatView({
             <span className="text-[9px] font-sans font-bold tracking-widest text-[#bbc9cf]/40 uppercase px-1.5">
               {copy.meditating}
             </span>
-            <div className="glass-panel border-l-2 border-[#fface8] rounded-2xl px-5 py-4 flex items-center gap-1.5">
+            <div className="glass-panel oracle-clean-panel border-l-2 border-[#fface8] rounded-2xl px-5 py-4 flex items-center gap-1.5 relative overflow-hidden">
               <span className="w-2.5 h-2.5 rounded-full bg-[#fface8] animate-bounce [animation-delay:-0.3s]" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#fface8] animate-bounce [animation-delay:-0.15s]" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#a5e7ff] animate-bounce" />
@@ -440,7 +440,7 @@ export default function OracleChatView({
 
       {/* Input chat tray at the bottom */}
       <ViewportPortal>
-        <div className="fixed inset-x-0 bottom-0 z-40 w-full bg-gradient-to-t from-[#0f131f] via-[#0f131f]/95 to-transparent px-4 pb-4 pt-6 shrink-0">
+        <div className="fixed inset-x-0 bottom-0 z-40 w-full bg-transparent to-transparent px-4 pb-4 pt-6 shrink-0">
           <div className="mx-auto w-full max-w-4xl">
         {/* Quick prompt guides */}
         <div className="flex gap-2.5 justify-center flex-wrap mb-4">
