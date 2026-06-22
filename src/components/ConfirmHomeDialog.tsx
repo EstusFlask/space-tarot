@@ -88,7 +88,7 @@ export default function ConfirmHomeDialog({
                 <button
                   type="button"
                   onClick={onConfirm}
-                  className="liquid-glass-primary inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-2.5 font-serif text-xs font-bold uppercase tracking-widest text-black transition-all hover:opacity-90 active:scale-95"
+                  className="liquid-glass-primary primary-action-hover primary-action-hover-red inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-2.5 font-serif text-xs font-bold uppercase tracking-widest text-black transition-all hover:opacity-90 active:scale-95"
                 >
                   <Home className="h-4 w-4" />
                   {copy.confirm}

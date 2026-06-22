@@ -144,7 +144,7 @@ export default function AISettingsDialog({
               </button>
               <button
                 type="submit"
-                className="liquid-glass-primary cursor-pointer rounded-full px-6 py-2.5 font-serif text-xs font-bold uppercase tracking-widest text-black transition-all hover:opacity-90 active:scale-95"
+                className="liquid-glass-primary primary-action-hover primary-action-hover-green cursor-pointer rounded-full px-6 py-2.5 font-serif text-xs font-bold uppercase tracking-widest text-black transition-all hover:opacity-90 active:scale-95"
               >
                 {copy.save}
               </button>

@@ -87,7 +87,7 @@ export default function GitHubSupportDialog({
                   href={GITHUB_REPO_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="liquid-glass-primary inline-flex items-center justify-center gap-2 rounded-full px-6 py-2.5 font-serif text-xs font-bold uppercase tracking-widest text-black transition-all hover:opacity-90 active:scale-95"
+                  className="liquid-glass-primary primary-action-hover primary-action-hover-gold inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-6 py-2.5 font-serif text-xs font-bold uppercase tracking-widest text-black transition-all hover:opacity-90 active:scale-95"
                 >
                   <ExternalLink className="h-4 w-4" />
                   {copy.openGitHub}
