@@ -57,7 +57,7 @@ export default function AISettingsDialog({
           >
             <motion.form
               onSubmit={handleSubmit}
-              className="glass-panel relative w-full max-w-md overflow-hidden rounded-2xl border border-[#a5e7ff]/20 p-5 text-left shadow-[0_0_40px_rgba(165,231,255,0.12)]"
+              className="liquid-glass liquid-glass-card relative w-full max-w-md overflow-hidden rounded-2xl border border-[#a5e7ff]/20 p-5 text-left shadow-[0_0_40px_rgba(165,231,255,0.12)]"
               initial={shouldReduceMotion ? false : { opacity: 0, y: 18, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -66,7 +66,7 @@ export default function AISettingsDialog({
               <div className="noise-overlay" />
 
             <div className="relative z-20 mb-5 flex items-center gap-3 border-b border-white/10 pb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#a5e7ff]/30 bg-[#a5e7ff]/10 text-[#a5e7ff]">
+              <div className="liquid-glass-control flex h-10 w-10 items-center justify-center rounded-full border border-[#a5e7ff]/30 text-[#a5e7ff]">
                 <Settings className="h-5 w-5" />
               </div>
               <div>
@@ -91,14 +91,14 @@ export default function AISettingsDialog({
                     disabled={isModelLocked}
                     onChange={event => setModel(event.target.value)}
                     placeholder={DEFAULT_GLM_MODEL}
-                    className="min-w-0 flex-1 rounded-full border border-white/10 bg-[#1b1f2c]/55 px-4 py-2.5 font-sans text-sm text-[#dfe2f3] placeholder-[#bbc9cf]/30 outline-none transition-all focus:border-[#a5e7ff]/70 focus:ring-1 focus:ring-[#a5e7ff]/30 disabled:text-[#bbc9cf]/70"
+                    className="liquid-glass-input min-w-0 flex-1 rounded-full px-4 py-2.5 font-sans text-sm text-[#dfe2f3] placeholder-[#bbc9cf]/30 outline-none transition-all focus:border-[#a5e7ff]/70 disabled:text-[#bbc9cf]/70"
                   />
                   <button
                     type="button"
                     onClick={() => setIsModelLocked(current => !current)}
                     title={isModelLocked ? copy.unlockTitle : copy.lockTitle}
                     aria-pressed={!isModelLocked}
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all active:scale-95 ${
+                    className={`liquid-glass-control flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all active:scale-95 ${
                       isModelLocked
                         ? 'border-[#ffdb40]/35 bg-[#ffdb40]/10 text-[#ffdb40] hover:bg-[#ffdb40]/20'
                         : 'border-[#a5e7ff]/40 bg-[#a5e7ff]/15 text-[#a5e7ff] hover:bg-[#a5e7ff]/25'
@@ -120,7 +120,7 @@ export default function AISettingsDialog({
                     value={apiKey}
                     onChange={event => setApiKey(event.target.value)}
                     placeholder={copy.apiKeyPlaceholder}
-                    className="w-full rounded-full border border-white/10 bg-[#1b1f2c]/55 py-2.5 pl-10 pr-4 font-sans text-sm text-[#dfe2f3] placeholder-[#bbc9cf]/30 outline-none transition-all focus:border-[#fface8]/70 focus:ring-1 focus:ring-[#fface8]/30"
+                    className="liquid-glass-input w-full rounded-full py-2.5 pl-10 pr-4 font-sans text-sm text-[#dfe2f3] placeholder-[#bbc9cf]/30 outline-none transition-all focus:border-[#fface8]/70"
                   />
                 </div>
                 <a
@@ -138,13 +138,13 @@ export default function AISettingsDialog({
               <button
                 type="button"
                 onClick={onCancel}
-                className="rounded-full border border-white/10 px-5 py-2.5 font-sans text-xs font-bold uppercase tracking-wider text-[#bbc9cf] transition-all hover:bg-white/5 hover:text-white active:scale-95"
+                className="liquid-glass-control rounded-full border border-white/10 px-5 py-2.5 font-sans text-xs font-bold uppercase tracking-wider text-[#bbc9cf] transition-all hover:bg-white/5 hover:text-white active:scale-95"
               >
                 {copy.cancel}
               </button>
               <button
                 type="submit"
-                className="rounded-full bg-gradient-to-r from-[#fface8] to-[#a5e7ff] px-6 py-2.5 font-serif text-xs font-bold uppercase tracking-widest text-black shadow-[0_0_16px_rgba(165,231,255,0.28)] transition-all hover:opacity-90 active:scale-95"
+                className="liquid-glass-primary rounded-full px-6 py-2.5 font-serif text-xs font-bold uppercase tracking-widest text-black transition-all hover:opacity-90 active:scale-95"
               >
                 {copy.save}
               </button>

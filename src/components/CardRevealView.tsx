@@ -183,7 +183,7 @@ export default function CardRevealView({
         </p>
 
         {question && (
-          <div className="mt-3 inline-block bg-[#1b1f2c]/55 border border-[#a5e7ff]/20 rounded-full px-4 py-1 font-sans text-xs text-[#a5e7ff] tracking-wide">
+          <div className="liquid-glass-chip mt-3 inline-block border border-[#a5e7ff]/20 rounded-full px-4 py-1 font-sans text-xs text-[#a5e7ff] tracking-wide">
             {copy.focusQuery} <span className="italic text-white">"{question}"</span>
           </div>
         )}
@@ -355,7 +355,7 @@ export default function CardRevealView({
       {/* Selected Card Deep Intuitive Deck Drawer details */}
       {selectedCardIndex !== null && (
         <div className="w-full max-w-lg mx-auto px-4 mt-12 animate-fade-in relative z-20">
-          <div className="glass-panel rounded-xl p-6 text-left border border-[#a5e7ff]/20">
+          <div className="liquid-glass rounded-xl p-6 text-left border border-[#a5e7ff]/20">
             <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-3">
               <div>
                 <span className="text-xs text-[#fface8] font-serif font-bold uppercase tracking-widest block">
@@ -368,7 +368,7 @@ export default function CardRevealView({
                   </span>
                 </h4>
               </div>
-              <div className="w-10 h-14 rounded border border-white/10 bg-white/5 flex items-center justify-center overflow-hidden">
+              <div className="liquid-glass-chip w-10 h-14 rounded border border-white/10 flex items-center justify-center overflow-hidden">
                 <RetryingImage
                   src={getTarotImageByName(drawnCards[selectedCardIndex].card.name)}
                   alt={getLocalizedCardName(drawnCards[selectedCardIndex].card.name, language)}
@@ -390,7 +390,7 @@ export default function CardRevealView({
                   ? drawnCards[selectedCardIndex].card.uprightKeywords
                   : drawnCards[selectedCardIndex].card.reversedKeywords
                 ).map((k, i) => (
-                  <span key={i} className="bg-[#1b1f2c] border border-white/5 text-[#dfe2f3] text-xs rounded-full px-3 py-0.5">
+                  <span key={i} className="liquid-glass-chip border border-white/5 text-[#dfe2f3] text-xs rounded-full px-3 py-0.5">
                     {k === 'Upright' ? commonCopy.upright : k === 'Reversed' ? commonCopy.reversed : k}
                   </span>
                 ))}
@@ -402,12 +402,12 @@ export default function CardRevealView({
 
       {/* Global Actions Bar at the bottom of reveal */}
       <ViewportPortal>
-        <div className="fixed inset-x-0 bottom-0 z-40 w-full border-t border-white/5 bg-[#0f131f]/90 px-4 py-4 backdrop-blur-md">
+        <div className="liquid-glass-bar fixed inset-x-0 bottom-0 z-40 w-full border-t border-white/5 px-4 py-4">
           <div className="mx-auto flex w-full max-w-2xl items-center justify-center gap-4">
         {!allFlipped ? (
           <button
             onClick={handleRevealAll}
-            className="px-6 py-3 rounded-full border border-[#a5e7ff]/30 text-[#a5e7ff] hover:bg-[#a5e7ff]/10 active:scale-95 transition-all text-xs font-bold tracking-widest uppercase cursor-pointer"
+            className="liquid-glass-control px-6 py-3 rounded-full border border-[#a5e7ff]/30 text-[#a5e7ff] hover:bg-[#a5e7ff]/10 active:scale-95 transition-all text-xs font-bold tracking-widest uppercase cursor-pointer"
           >
             {copy.revealAll}
           </button>
@@ -421,8 +421,8 @@ export default function CardRevealView({
               disabled={isAiLoading}
               className={`w-full sm:w-auto px-8 py-3.5 rounded-full font-serif font-bold text-xs ${
                 isAiLoading
-                  ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
-                  : 'bg-gradient-to-r from-[#fface8] to-[#a5e7ff] text-black hover:opacity-90 active:scale-95 shadow-[0_0_20px_rgba(255,172,232,0.4)] hover:shadow-[0_0_25px_rgba(165,231,255,0.4)] cursor-pointer'
+                  ? 'liquid-glass-chip text-gray-500 cursor-not-allowed border border-gray-700'
+                  : 'liquid-glass-primary text-black hover:opacity-90 active:scale-95 cursor-pointer'
               } tracking-widest uppercase flex items-center justify-center gap-2`}
             >
               {isAiLoading ? (
@@ -464,7 +464,7 @@ export default function CardRevealView({
       {/* Error displays */}
       {aiError && (
         <ViewportPortal>
-          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] w-[90%] max-w-md glass-panel p-4 rounded-xl border border-red-500/30 flex gap-3 text-left">
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] w-[90%] max-w-md liquid-glass p-4 rounded-xl border border-red-500/30 flex gap-3 text-left">
             <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
             <div>
               <h5 className="font-sans font-bold text-red-300 text-xs uppercase tracking-wide">
@@ -544,7 +544,7 @@ function TarotCardFlipItem({
 
         {/* Face-up structure */}
         <div
-          className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 bg-[#1b1f2c] rounded-xl overflow-hidden shadow-2xl border flex flex-col items-center justify-between p-2 sm:p-4 transition-[filter,box-shadow] duration-300 group-hover:drop-shadow-[0_0_14px_rgba(165,231,255,0.35)] ${themeClass}`}
+          className={`liquid-glass absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-xl overflow-hidden shadow-2xl border flex flex-col items-center justify-between p-2 sm:p-4 transition-[filter,box-shadow] duration-300 group-hover:drop-shadow-[0_0_14px_rgba(165,231,255,0.35)] ${themeClass}`}
         >
           {/* Bevel details */}
           <div className="absolute inset-1.5 border border-white/[0.04] rounded-lg pointer-events-none" />

@@ -138,6 +138,10 @@ export default function App() {
   }, [language]);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 });
+  }, [currentScreen]);
+
+  useEffect(() => {
     drawnCards.forEach(({ card }) => {
       const imageSrc = getTarotImageByName(card.name);
       if (!imageSrc) return;

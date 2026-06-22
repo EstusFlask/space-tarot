@@ -48,7 +48,7 @@ export default function QuestionPromptDialog({
           >
             <motion.form
               onSubmit={handleSubmit}
-              className="glass-panel relative w-full max-w-md overflow-hidden rounded-2xl border border-[#fface8]/20 p-5 text-left shadow-[0_0_40px_rgba(255,172,232,0.12)]"
+              className="liquid-glass liquid-glass-card relative w-full max-w-md overflow-hidden rounded-2xl border border-[#fface8]/20 p-5 text-left shadow-[0_0_40px_rgba(255,172,232,0.12)]"
               initial={shouldReduceMotion ? false : { opacity: 0, y: 18, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -57,7 +57,7 @@ export default function QuestionPromptDialog({
               <div className="noise-overlay" />
 
             <div className="relative z-20 mb-5 flex items-center gap-3 border-b border-white/10 pb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#fface8]/30 bg-[#fface8]/10 text-[#fface8]">
+              <div className="liquid-glass-control flex h-10 w-10 items-center justify-center rounded-full border border-[#fface8]/30 text-[#fface8]">
                 <MessageCircleQuestion className="h-5 w-5" />
               </div>
               <div>
@@ -74,7 +74,7 @@ export default function QuestionPromptDialog({
                 onChange={event => setQuestion(event.target.value)}
                 placeholder={copy.placeholder}
                 autoFocus
-                className="w-full rounded-full border border-white/10 bg-[#1b1f2c]/55 px-5 py-3 font-sans text-sm text-[#dfe2f3] placeholder-[#bbc9cf]/35 outline-none transition-all focus:border-[#fface8]/70 focus:ring-1 focus:ring-[#fface8]/30"
+                className="liquid-glass-input w-full rounded-full px-5 py-3 font-sans text-sm text-[#dfe2f3] placeholder-[#bbc9cf]/35 outline-none transition-all focus:border-[#fface8]/70"
               />
             </div>
 
@@ -82,7 +82,7 @@ export default function QuestionPromptDialog({
               <button
                 type="button"
                 onClick={onCancel}
-                className="rounded-full border border-white/10 px-5 py-2.5 font-sans text-xs font-bold uppercase tracking-wider text-[#bbc9cf] transition-all hover:bg-white/5 hover:text-white active:scale-95"
+                className="liquid-glass-control rounded-full border border-white/10 px-5 py-2.5 font-sans text-xs font-bold uppercase tracking-wider text-[#bbc9cf] transition-all hover:bg-white/5 hover:text-white active:scale-95"
               >
                 {copy.cancel}
               </button>
@@ -91,8 +91,8 @@ export default function QuestionPromptDialog({
                 disabled={!question.trim()}
                 className={`rounded-full px-6 py-2.5 font-serif text-xs font-bold uppercase tracking-widest transition-all active:scale-95 ${
                   question.trim()
-                    ? 'bg-gradient-to-r from-[#fface8] to-[#a5e7ff] text-black shadow-[0_0_16px_rgba(255,172,232,0.28)] hover:opacity-90'
-                    : 'cursor-not-allowed border border-white/10 bg-white/5 text-[#bbc9cf]/40'
+                    ? 'liquid-glass-primary text-black hover:opacity-90'
+                    : 'liquid-glass-chip cursor-not-allowed border border-white/10 text-[#bbc9cf]/40'
                 }`}
               >
                 {copy.send}

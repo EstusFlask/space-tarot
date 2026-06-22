@@ -240,9 +240,9 @@ export default function OracleChatView({
   const quickPrompts = copy.quickPrompts;
 
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col h-[calc(100vh-100px)] pt-6 relative">
+    <div className="w-full max-w-4xl mx-auto flex flex-col h-[calc(100vh-100px)] pt-20 relative">
       {/* Top Session Context Header info */}
-      <div className="glass-panel border border-[#a5e7ff]/10 rounded-xl px-5 py-3.5 mb-4 flex flex-col md:flex-row items-center justify-between gap-3 text-left relative overflow-hidden shrink-0 mt-6 mx-4">
+      <div className="liquid-glass liquid-glass-card oracle-clean-panel border border-[#a5e7ff]/10 rounded-xl px-5 py-3.5 mb-4 flex flex-col md:flex-row items-center justify-between gap-3 text-left relative overflow-hidden shrink-0 mx-4">
         <div className="noise-overlay" />
         <div className="relative z-20">
           <span className="text-[10px] font-sans font-bold text-[#fface8] tracking-widest uppercase">
@@ -262,7 +262,7 @@ export default function OracleChatView({
         <div className="flex flex-wrap items-center gap-2 relative z-20 w-full md:w-auto shrink-0 justify-center md:justify-end">
           <button
             onClick={onReturnToSpread}
-            className="px-4 py-2 rounded-full border border-[#a5e7ff]/25 text-[#a5e7ff] hover:bg-[#a5e7ff]/10 transition-all text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 cursor-pointer"
+            className="liquid-glass-control px-4 py-2 rounded-full border border-[#a5e7ff]/25 text-[#a5e7ff] hover:bg-[#a5e7ff]/10 transition-all text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             {copy.backToSpread}
@@ -271,7 +271,7 @@ export default function OracleChatView({
           <button
             onClick={handleSaveReading}
             disabled={isLoading || isSavingSnapshot || isSavingReading || isSaved}
-            className={`px-4 py-2 rounded-full border text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 transition-all ${
+            className={`liquid-glass-control px-4 py-2 rounded-full border text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 transition-all ${
               isSaved
                 ? 'bg-emerald-400/20 border-emerald-400/50 text-emerald-300'
                 : isLoading || isSavingSnapshot || isSavingReading
@@ -298,7 +298,7 @@ export default function OracleChatView({
 
           <button
             onClick={onReset}
-            className="px-4 py-2 rounded-full bg-[#fface8]/10 border border-[#fface8]/30 text-[#fface8] hover:bg-[#fface8]/20 transition-all text-xs font-bold tracking-wider uppercase cursor-pointer"
+            className="liquid-glass-control px-4 py-2 rounded-full border border-[#fface8]/30 text-[#fface8] hover:bg-[#fface8]/20 transition-all text-xs font-bold tracking-wider uppercase cursor-pointer"
           >
             {copy.newSpread}
           </button>
@@ -308,11 +308,11 @@ export default function OracleChatView({
       {/* Main Chat Conversation Stream container */}
       <div className="oracle-chat-stream flex-1 overflow-y-auto px-4 pb-32 pt-2 gap-4 flex flex-col chat-scroll">
         {/* Draw cards presentation summary for quick references */}
-        <div className="glass-panel oracle-clean-panel border border-white/5 rounded-xl p-4 flex flex-wrap gap-2.5 justify-center items-center shrink-0 mb-2 relative overflow-hidden">
+        <div className="liquid-glass liquid-glass-card oracle-clean-panel border border-white/5 rounded-xl p-4 flex flex-wrap gap-2.5 justify-center items-center shrink-0 mb-2 relative overflow-hidden">
           {drawnCards.map((dc, i) => (
             <div
               key={i}
-              className="flex items-center gap-2 bg-[#1b1f2c]/55 border border-white/[0.04] rounded-lg px-3 py-1.5 text-left"
+              className="liquid-glass-chip flex items-center gap-2 border border-white/[0.04] rounded-lg px-3 py-1.5 text-left"
             >
               <div className="h-12 w-8 shrink-0 overflow-hidden rounded border border-white/10 bg-black/20">
                 <RetryingImage
@@ -355,8 +355,8 @@ export default function OracleChatView({
                 <div
                   className={`rounded-2xl px-5 py-4 text-sm leading-relaxed relative overflow-hidden max-w-full ${
                     isAi
-                      ? 'glass-panel oracle-clean-panel border-l-2 border-[#fface8]/65 text-[#dfe2f3]'
-                      : 'bg-gradient-to-br from-[#1b1f2c] to-[#0f131f] border border-[#a5e7ff]/30 text-[#dfe2f3] shadow-[0_0_15px_rgba(165,231,255,0.08)]'
+                      ? 'liquid-glass liquid-glass-card oracle-clean-panel border border-white/10 text-[#dfe2f3]'
+                      : 'liquid-glass liquid-glass-card oracle-clean-panel border border-[#a5e7ff]/30 text-[#dfe2f3]'
                   }`}
                 >
                 {isAi && <div className="noise-overlay" />}
@@ -407,7 +407,7 @@ export default function OracleChatView({
                     title={retryFallbackLabel}
                     onClick={() => handleRetryFallback(msg)}
                     disabled={isLoading}
-                    className="mt-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#fface8]/35 bg-[#fface8]/10 text-[#fface8] transition-all hover:bg-[#fface8]/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    className="liquid-glass-control mt-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#fface8]/35 text-[#fface8] transition-all hover:bg-[#fface8]/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {retryingMessageId === msg.id ? (
                       <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -427,7 +427,7 @@ export default function OracleChatView({
             <span className="text-[9px] font-sans font-bold tracking-widest text-[#bbc9cf]/40 uppercase px-1.5">
               {copy.meditating}
             </span>
-            <div className="glass-panel oracle-clean-panel border-l-2 border-[#fface8] rounded-2xl px-5 py-4 flex items-center gap-1.5 relative overflow-hidden">
+            <div className="liquid-glass liquid-glass-card oracle-clean-panel border border-white/10 rounded-2xl px-5 py-4 flex items-center gap-1.5 relative overflow-hidden">
               <span className="w-2.5 h-2.5 rounded-full bg-[#fface8] animate-bounce [animation-delay:-0.3s]" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#fface8] animate-bounce [animation-delay:-0.15s]" />
               <span className="w-2.5 h-2.5 rounded-full bg-[#a5e7ff] animate-bounce" />
@@ -449,7 +449,7 @@ export default function OracleChatView({
               key={i}
               onClick={() => handleSendMessage(p.text)}
               disabled={isLoading}
-              className="text-[10px] font-sans font-semibold border border-white/10 hover:border-[#fface8]/45 bg-[#1b1f2c]/55 hover:bg-[#1b1f2c] rounded-full px-4 py-1.5 text-[#bbc9cf] hover:text-[#fface8] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="liquid-glass-chip text-[10px] font-sans font-semibold border border-white/10 hover:border-[#fface8]/45 rounded-full px-4 py-1.5 text-[#bbc9cf] hover:text-[#fface8] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               ✦ {p.label}
             </button>
@@ -464,7 +464,7 @@ export default function OracleChatView({
           }}
           className="relative max-w-3xl mx-auto"
         >
-          <div className="flex items-center border border-white/10 rounded-full bg-[#1b1f2c]/40 backdrop-blur-xl px-4 py-2.5 shadow-2xl focus-within:border-[#fface8]/60 focus-within:ring-1 focus-within:ring-[#fface8]/30 transition-all">
+          <div className="liquid-glass flex items-center border border-white/10 rounded-full px-4 py-2.5 focus-within:border-[#fface8]/60 focus-within:ring-1 focus-within:ring-[#fface8]/30 transition-all">
             <input
               type="text"
               disabled={isLoading}
@@ -479,8 +479,8 @@ export default function OracleChatView({
               disabled={!userInput.trim() || isLoading}
               className={`rounded-full p-2.5 transition-all ${
                 userInput.trim() && !isLoading
-                  ? 'bg-[#fface8] text-black hover:scale-105 shadow-[0_0_12px_rgba(255,172,232,0.8)] cursor-pointer'
-                  : 'bg-white/5 text-[#bbc9cf]/40 cursor-not-allowed'
+                  ? 'liquid-glass-primary text-black hover:scale-105 cursor-pointer'
+                  : 'liquid-glass-chip text-[#bbc9cf]/40 cursor-not-allowed'
               }`}
             >
               {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

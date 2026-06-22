@@ -36,12 +36,12 @@ export default function SpreadSelection({ onSelectSpread, language }: SpreadSele
         {yesNoSpread && (
           <button
             onClick={() => onSelectSpread(yesNoSpread)}
-            className="col-span-1 md:col-span-4 group relative text-left rounded-xl glass-panel glass-card-hover p-6 flex flex-col items-center justify-center min-h-[300px] overflow-hidden cursor-pointer"
+            className="col-span-1 md:col-span-4 group relative text-left rounded-xl classic-glass-panel classic-glass-card-hover p-6 flex flex-col items-center justify-center min-h-[300px] overflow-hidden cursor-pointer"
           >
             <div className="noise-overlay" />
             
             {/* Internal ambient neon gold glow */}
-            <div className="absolute inset-0 opacity-40 group-hover:opacity-75 transition-opacity duration-500 bg-[radial-gradient(circle_at_center,_rgba(255,219,64,0.35)_0%,_transparent_70%)] blur-xl" />
+            <div className="spread-glow spread-glow-yesno" />
 
             <div className="relative z-20 flex flex-col items-center gap-6">
               {/* Card Shape */}
@@ -65,12 +65,12 @@ export default function SpreadSelection({ onSelectSpread, language }: SpreadSele
         {threeCardSpread && (
           <button
             onClick={() => onSelectSpread(threeCardSpread)}
-            className="col-span-1 md:col-span-8 group relative text-left rounded-xl glass-panel glass-card-hover p-6 flex flex-col sm:flex-row items-center justify-center gap-8 min-h-[300px] overflow-hidden cursor-pointer"
+            className="col-span-1 md:col-span-8 group relative text-left rounded-xl classic-glass-panel classic-glass-card-hover p-6 flex flex-col sm:flex-row items-center justify-center gap-8 min-h-[300px] overflow-hidden cursor-pointer"
           >
             <div className="noise-overlay" />
             
             {/* Internal ambient glowing nebula */}
-            <div className="absolute inset-0 opacity-30 group-hover:opacity-65 transition-opacity duration-500 bg-[radial-gradient(circle_at_center,_rgba(165,231,255,0.25)_0%,_rgba(255,172,232,0.15)_40%,_transparent_75%)] blur-2xl" />
+            <div className="spread-glow spread-glow-three" />
 
             {/* Simulated 3-Card layout */}
             <div className="relative z-20 flex items-center justify-center gap-3">
@@ -111,12 +111,12 @@ export default function SpreadSelection({ onSelectSpread, language }: SpreadSele
         {celticCrossSpread && (
           <button
             onClick={() => onSelectSpread(celticCrossSpread)}
-            className="col-span-1 md:col-span-12 group relative text-left rounded-xl glass-panel glass-card-hover p-8 flex flex-col md:flex-row items-center justify-center gap-10 min-h-[350px] overflow-hidden cursor-pointer mt-3"
+            className="col-span-1 md:col-span-12 group relative text-left rounded-xl classic-glass-panel classic-glass-card-hover p-8 flex flex-col md:flex-row items-center justify-center gap-10 min-h-[350px] overflow-hidden cursor-pointer mt-3"
           >
             <div className="noise-overlay" />
             
             {/* Internal ambient gold/bronze flow */}
-            <div className="absolute inset-0 opacity-25 group-hover:opacity-55 transition-opacity duration-700 bg-[radial-gradient(circle_at_center,_rgba(255,219,64,0.22)_0%,_rgba(27,31,44,0.1)_60%,_transparent_80%)] blur-[40px]" />
+            <div className="spread-glow spread-glow-celtic" />
 
             {/* Abstract representation of Celtic Cross */}
             <div className="relative z-20 flex-1 flex justify-center items-center h-full min-h-[240px]">

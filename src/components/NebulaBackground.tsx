@@ -43,6 +43,10 @@ export default function NebulaBackground() {
       uniform vec2 u_mouse;
       varying vec2 v_texCoord;
 
+      float grain(vec2 p) {
+        return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453123);
+      }
+
       void main() {
         vec2 uv = v_texCoord;
         vec2 mouse = u_mouse / u_resolution;
@@ -62,9 +66,12 @@ export default function NebulaBackground() {
         base += accent * pow(energy * 0.5 + 0.5, 4.0) * 0.18;
         
         float d = length(uv - mouse);
-        base += accent * (1.0 - smoothstep(0.0, 0.4, d)) * 0.12;
+        float pointerGlow = 1.0 - smoothstep(0.0, 0.42, d);
+        base += accent * pointerGlow * pointerGlow * 0.15;
+        base += vec3(1.0, 0.66, 0.9) * pointerGlow * 0.035;
+        base += (grain(gl_FragCoord.xy + u_time * 37.0) - 0.5) * 0.006;
 
-        gl_FragColor = vec4(base, 1.0);
+        gl_FragColor = vec4(clamp(base, 0.0, 1.0), 1.0);
       }
     `;
 
@@ -110,6 +117,7 @@ export default function NebulaBackground() {
     const uRes = gl.getUniformLocation(program, 'u_resolution');
     const uMouse = gl.getUniformLocation(program, 'u_mouse');
 
+    let latestPointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     let touchMoveFrameId: number | null = null;
     let pendingTouchPoint: { x: number; y: number } | null = null;
@@ -122,6 +130,7 @@ export default function NebulaBackground() {
     };
 
     const updateMouseFromClientPoint = (clientX: number, clientY: number) => {
+      latestPointer = { x: clientX, y: clientY };
       const width = canvas.clientWidth || window.innerWidth;
       const height = canvas.clientHeight || window.innerHeight;
 
@@ -158,12 +167,16 @@ export default function NebulaBackground() {
     window.addEventListener('touchmove', handleTouchMove, touchMoveOptions);
 
     const resize = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.max(1, Math.round(window.innerWidth * pixelRatio));
+      const h = Math.max(1, Math.round(window.innerHeight * pixelRatio));
       if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
       }
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+      updateMouseFromClientPoint(latestPointer.x, latestPointer.y);
       updateFrameBudget();
     };
 

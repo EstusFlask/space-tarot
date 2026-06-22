@@ -254,7 +254,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
   return (
     <div className="w-full flex flex-col items-center justify-start min-h-[calc(100vh-80px)] pt-20 pb-20 text-center relative overflow-hidden">
       {/* Top Right Floating Interactive Drawn Tapestry Control Panel */}
-      <div className="md:absolute md:top-2 md:right-6 md:mt-4 mb-6 md:mb-0 w-full md:w-[220px] max-w-sm px-4 z-40 bg-[#1b1f2c]/55 backdrop-blur-xl border border-white/10 p-3.5 rounded-2xl flex flex-col items-start gap-1.5 transition-all text-left shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+      <div className="liquid-glass liquid-glass-card md:absolute md:top-20 md:right-6 md:mt-0 mb-6 md:mb-0 w-full md:w-[220px] max-w-sm px-4 z-40 border border-white/10 p-3.5 rounded-2xl flex flex-col items-start gap-1.5 transition-all text-left">
         <span className="text-[10px] font-sans font-extrabold tracking-widest text-[#a5e7ff] uppercase block mb-1">
           {copy.panelTitle}
         </span>
@@ -321,7 +321,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
           <input
             ref={questionInputRef}
             type="text"
-            className="w-full bg-[#1b1f2c]/50 border border-white/10 rounded-full py-2.5 pl-6 pr-14 font-sans text-sm text-[#dfe2f3] placeholder-[#bbc9cf]/40 focus:border-[#a5e7ff] focus:ring-1 focus:ring-[#a5e7ff]/30 focus:outline-none transition-colors align-middle shadow-lg text-center"
+            className="liquid-glass-input w-full rounded-full py-2.5 pl-6 pr-14 font-sans text-sm text-[#dfe2f3] placeholder-[#bbc9cf]/40 focus:outline-none transition-colors align-middle text-center"
             placeholder={copy.placeholder}
             value={question}
             onChange={(e) => {
@@ -377,7 +377,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
 
         {/* Drawn Counter Indicator */}
         <div
-          className="absolute z-20 flex flex-col items-center justify-center bg-[#1b1f2c]/75 backdrop-blur-md rounded-full border border-[#a5e7ff]/20 shadow-2xl"
+          className="liquid-glass absolute z-20 flex flex-col items-center justify-center rounded-full border border-[#a5e7ff]/20"
           style={{ width: `${centerCounterSize}px`, height: `${centerCounterSize}px` }}
         >
           <span className="font-serif text-3xl font-bold text-[#fface8]">{drawn.length}</span>
@@ -479,13 +479,13 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
         {isSelectionComplete ? (
           <button
             onClick={handleConfirm}
-            className="w-full max-w-sm py-4 rounded-full font-serif font-bold text-lg text-black bg-[#a5e7ff] hover:bg-[#b6ebff] active:scale-95 transition-all shadow-[0_0_20px_rgba(165,231,255,0.5)] cursor-pointer tracking-wider flex items-center justify-center gap-2"
+            className="liquid-glass-primary w-full max-w-sm py-4 rounded-full font-serif font-bold text-lg text-black active:scale-95 transition-all cursor-pointer tracking-wider flex items-center justify-center gap-2"
           >
             {copy.confirm}
             <Sparkles className="w-5 h-5 animate-spin-slow" />
           </button>
         ) : (
-          <div className="py-2.5 px-6 rounded-full border border-white/5 bg-white/[0.02] text-[#bbc9cf]/60 font-sans text-xs tracking-widest uppercase">
+          <div className="liquid-glass-chip py-2.5 px-6 rounded-full border border-white/5 text-[#bbc9cf]/60 font-sans text-xs tracking-widest uppercase">
             {copy.selectMore(totalToDraw - drawn.length)}
           </div>
         )}
