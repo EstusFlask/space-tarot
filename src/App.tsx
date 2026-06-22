@@ -9,6 +9,7 @@ import ReadingSnapshot from './components/ReadingSnapshot';
 import PageTransition from './components/PageTransition';
 import AISettingsDialog from './components/AISettingsDialog';
 import GitHubSupportDialog from './components/GitHubSupportDialog';
+import ConfirmHomeDialog from './components/ConfirmHomeDialog';
 import { TarotScreen, DrawnCard, ChatMessage, ThemeMode } from './types';
 import { getTarotImageByName, TAROT_DECK, TAROT_SPREADS, TarotSpread } from './data/tarotCards';
 import { DEFAULT_LANGUAGE, Language } from './data/localization';
@@ -149,6 +150,7 @@ export default function App() {
   const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
   const [showAISettings, setShowAISettings] = useState(false);
   const [showGitHubSupport, setShowGitHubSupport] = useState(false);
+  const [showHomeConfirm, setShowHomeConfirm] = useState(false);
   const [aiSettings, setAISettings] = useState<AISettings>(() => readAISettings());
   const [assetRefreshKey, setAssetRefreshKey] = useState(0);
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => readThemeMode());
@@ -253,7 +255,7 @@ export default function App() {
     setAssetRefreshKey(currentKey => currentKey + 1);
   };
 
-  const handleNavigateHome = () => {
+  const resetReadingToHome = () => {
     setSelectedSpread(null);
     setDrawnCards([]);
     setQuestion('');
@@ -261,6 +263,20 @@ export default function App() {
     setAllCardsRevealed(false);
     setChatMessages([]);
     setCurrentScreen('spread_selection');
+  };
+
+  const handleNavigateHome = () => {
+    if (currentScreen !== 'spread_selection') {
+      setShowHomeConfirm(true);
+      return;
+    }
+
+    resetReadingToHome();
+  };
+
+  const handleConfirmNavigateHome = () => {
+    setShowHomeConfirm(false);
+    resetReadingToHome();
   };
 
   const handleReturnToSpread = () => {
@@ -418,6 +434,13 @@ export default function App() {
         open={showGitHubSupport}
         language={language}
         onClose={() => setShowGitHubSupport(false)}
+      />
+
+      <ConfirmHomeDialog
+        open={showHomeConfirm}
+        language={language}
+        onCancel={() => setShowHomeConfirm(false)}
+        onConfirm={handleConfirmNavigateHome}
       />
 
       </div>

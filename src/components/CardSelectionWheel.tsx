@@ -343,24 +343,26 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
       </div>
 
       {/* Spaced out instruction labels */}
-      <div className="z-20 text-center mb-6 px-4">
-        <h2 className="font-serif text-2xl md:text-3xl text-[#dfe2f3] tracking-widest uppercase text-glow mb-1.5">
-          {copy.title}
-        </h2>
-        <p className="font-sans text-xs md:text-sm text-[#bbc9cf] max-w-md mx-auto min-h-[20px]">
-          {drawn.length < totalToDraw ? (
-            <span className="flex items-center justify-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#fface8] animate-pulse" />
-              {copy.drawMore(
-                totalToDraw - drawn.length,
-                localizedSpread.name,
-                positionSlots[currentDrawIndex]?.name ?? positionSlots[currentDrawIndex]?.compactName ?? '',
-              )}
-            </span>
-          ) : (
-            <span className="text-[#a5e7ff] font-bold">{copy.complete}</span>
-          )}
-        </p>
+      <div className="z-20 mb-6 w-full px-4 text-center">
+        <div className="liquid-glass card-selection-heading-glass mx-auto max-w-2xl rounded-[26px] border border-white/10 px-5 py-4 md:px-8 md:py-5">
+          <h2 className="font-serif text-2xl md:text-3xl text-[#dfe2f3] tracking-widest uppercase text-glow mb-1.5">
+            {copy.title}
+          </h2>
+          <p className="font-sans text-xs md:text-sm text-[#bbc9cf] max-w-md mx-auto min-h-[20px]">
+            {drawn.length < totalToDraw ? (
+              <span className="flex items-center justify-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#fface8] animate-pulse" />
+                {copy.drawMore(
+                  totalToDraw - drawn.length,
+                  localizedSpread.name,
+                  positionSlots[currentDrawIndex]?.name ?? positionSlots[currentDrawIndex]?.compactName ?? '',
+                )}
+              </span>
+            ) : (
+              <span className="text-[#a5e7ff] font-bold">{copy.complete}</span>
+            )}
+          </p>
+        </div>
       </div>
 
       {/* Floating Circle Tarot deck - Taller container height and extra margins to avoid overlap */}

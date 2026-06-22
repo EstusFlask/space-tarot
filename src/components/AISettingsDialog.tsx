@@ -98,7 +98,7 @@ export default function AISettingsDialog({
                     onClick={() => setIsModelLocked(current => !current)}
                     title={isModelLocked ? copy.unlockTitle : copy.lockTitle}
                     aria-pressed={!isModelLocked}
-                    className={`liquid-glass-control flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-all active:scale-95 ${
+                    className={`liquid-glass-control flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-all active:scale-95 ${
                       isModelLocked
                         ? 'border-[#ffdb40]/35 bg-[#ffdb40]/10 text-[#ffdb40] hover:bg-[#ffdb40]/20'
                         : 'border-[#a5e7ff]/40 bg-[#a5e7ff]/15 text-[#a5e7ff] hover:bg-[#a5e7ff]/25'
@@ -138,13 +138,13 @@ export default function AISettingsDialog({
               <button
                 type="button"
                 onClick={onCancel}
-                className="liquid-glass-control rounded-full border border-white/10 px-5 py-2.5 font-sans text-xs font-bold uppercase tracking-wider text-[#bbc9cf] transition-all hover:bg-white/5 hover:text-white active:scale-95"
+                className="liquid-glass-control cursor-pointer rounded-full border border-white/10 px-5 py-2.5 font-sans text-xs font-bold uppercase tracking-wider text-[#bbc9cf] transition-all hover:bg-white/5 hover:text-white active:scale-95"
               >
                 {copy.cancel}
               </button>
               <button
                 type="submit"
-                className="liquid-glass-primary rounded-full px-6 py-2.5 font-serif text-xs font-bold uppercase tracking-widest text-black transition-all hover:opacity-90 active:scale-95"
+                className="liquid-glass-primary cursor-pointer rounded-full px-6 py-2.5 font-serif text-xs font-bold uppercase tracking-widest text-black transition-all hover:opacity-90 active:scale-95"
               >
                 {copy.save}
               </button>

@@ -20,13 +20,15 @@ export default function SpreadSelection({ onSelectSpread, language }: SpreadSele
 
   return (
     <div className="w-full flex flex-col items-center justify-center min-h-[calc(100vh-100px)] pt-24 md:pt-32">
-      <div className="text-center mb-12 w-full px-4 text-glow-container">
-        <h2 className="font-serif text-3xl md:text-5xl text-[#dfe2f3] mb-3 drop-shadow-md tracking-normal">
-          {copy.title}
-        </h2>
-        <p className="font-sans text-base md:text-lg text-[#bbc9cf] max-w-2xl mx-auto leading-relaxed">
-          {copy.description}
-        </p>
+      <div className="mb-10 w-full px-4 text-center text-glow-container md:mb-12">
+        <div className="liquid-glass spread-intro-glass mx-auto max-w-3xl rounded-[28px] border border-white/10 px-6 py-5 md:px-10 md:py-7">
+          <h2 className="font-serif text-3xl md:text-5xl text-[#dfe2f3] mb-3 drop-shadow-md tracking-normal">
+            {copy.title}
+          </h2>
+          <p className="font-sans text-base md:text-lg text-[#bbc9cf] max-w-2xl mx-auto leading-relaxed">
+            {copy.description}
+          </p>
+        </div>
       </div>
 
       {/* Bento Grid layout */}

@@ -47,7 +47,7 @@ export default function GitHubSupportDialog({
                 type="button"
                 onClick={onClose}
                 title={copy.close}
-                className="liquid-glass-control absolute right-4 top-4 z-30 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-[#bbc9cf] transition-all hover:bg-white/5 hover:text-white active:scale-95"
+                className="liquid-glass-control absolute right-4 top-4 z-30 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/10 text-[#bbc9cf] transition-all hover:bg-white/5 hover:text-white active:scale-95"
               >
                 <X className="h-4 w-4" />
               </button>
