@@ -9,7 +9,7 @@ import ReadingSnapshot from './components/ReadingSnapshot';
 import PageTransition from './components/PageTransition';
 import AISettingsDialog from './components/AISettingsDialog';
 import GitHubSupportDialog from './components/GitHubSupportDialog';
-import { TarotScreen, DrawnCard, ChatMessage } from './types';
+import { TarotScreen, DrawnCard, ChatMessage, ThemeMode } from './types';
 import { getTarotImageByName, TAROT_DECK, TAROT_SPREADS, TarotSpread } from './data/tarotCards';
 import { DEFAULT_LANGUAGE, Language } from './data/localization';
 import { AISettings, readAISettings, saveAISettings } from './utils/aiSettings';
@@ -22,6 +22,35 @@ interface DevDebugReading {
   question: string;
   analysis: string;
   messages: ChatMessage[];
+}
+
+type ResolvedTheme = Exclude<ThemeMode, 'system'>;
+
+const THEME_STORAGE_KEY = 'tarot-theme-mode';
+
+function isThemeMode(value: string | null): value is ThemeMode {
+  return value === 'dark' || value === 'light' || value === 'system';
+}
+
+function readThemeMode(): ThemeMode {
+  if (typeof window === 'undefined') {
+    return 'dark';
+  }
+
+  try {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return isThemeMode(storedTheme) ? storedTheme : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+
+function getSystemTheme(): ResolvedTheme {
+  if (typeof window === 'undefined') {
+    return 'dark';
+  }
+
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 }
 
 function getDevDebugReading(): DevDebugReading | null {
@@ -122,6 +151,8 @@ export default function App() {
   const [showGitHubSupport, setShowGitHubSupport] = useState(false);
   const [aiSettings, setAISettings] = useState<AISettings>(() => readAISettings());
   const [assetRefreshKey, setAssetRefreshKey] = useState(0);
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => readThemeMode());
+  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
   const snapshotRef = useRef<HTMLDivElement | null>(null);
   const [language, setLanguage] = useState<Language>(() => {
     try {
@@ -136,6 +167,33 @@ export default function App() {
     localStorage.setItem('tarot-language', language);
     document.documentElement.lang = language;
   }, [language]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+    const updateSystemTheme = () => {
+      setSystemTheme(mediaQuery.matches ? 'light' : 'dark');
+    };
+
+    updateSystemTheme();
+    mediaQuery.addEventListener('change', updateSystemTheme);
+    return () => mediaQuery.removeEventListener('change', updateSystemTheme);
+  }, []);
+
+  const resolvedTheme: ResolvedTheme = themeMode === 'system' ? systemTheme : themeMode;
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, themeMode);
+    } catch {
+      // Ignore storage failures; the theme still applies for this session.
+    }
+
+    document.documentElement.classList.remove('theme-dark', 'theme-light');
+    document.documentElement.classList.add(`theme-${resolvedTheme}`);
+    document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
+    document.documentElement.dataset.themeMode = themeMode;
+    document.documentElement.style.colorScheme = resolvedTheme;
+  }, [resolvedTheme, themeMode]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });
@@ -212,6 +270,14 @@ export default function App() {
 
   const handleToggleLanguage = () => {
     setLanguage(current => (current === 'zh' ? 'en' : 'zh'));
+  };
+
+  const handleToggleTheme = () => {
+    setThemeMode(current => {
+      if (current === 'dark') return 'light';
+      if (current === 'light') return 'system';
+      return 'dark';
+    });
   };
 
   const canSaveReading = Boolean(
@@ -297,7 +363,7 @@ export default function App() {
 
   return (
     <AssetRefreshContext.Provider value={assetRefreshKey}>
-      <div className="relative min-h-screen text-[#dfe2f3] select-none">
+      <div className="app-shell relative min-h-screen select-none">
       
       {/* Immersive WebGL Shader Backdrop */}
       <NebulaBackground />
@@ -312,6 +378,9 @@ export default function App() {
         isSavingReading={isSavingSnapshot}
         language={language}
         onToggleLanguage={handleToggleLanguage}
+        themeMode={themeMode}
+        resolvedTheme={resolvedTheme}
+        onToggleTheme={handleToggleTheme}
         onOpenAISettings={() => setShowAISettings(true)}
         onOpenGitHubSupport={() => setShowGitHubSupport(true)}
       />

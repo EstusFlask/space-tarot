@@ -220,9 +220,9 @@ export default function NebulaBackground() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-60" />
-      <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background/80" />
+    <div className="nebula-backdrop fixed inset-0 z-[-1] pointer-events-none overflow-hidden">
+      <canvas ref={canvasRef} className="nebula-canvas absolute inset-0 w-full h-full" />
+      <div className="nebula-vignette absolute inset-0" />
     </div>
   );
 }

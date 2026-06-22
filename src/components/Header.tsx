@@ -1,5 +1,5 @@
-import { TarotScreen } from '../types';
-import { Home, Sparkles, Download, Settings, RefreshCw, Github } from 'lucide-react';
+import { TarotScreen, ThemeMode } from '../types';
+import { Home, Sparkles, Download, Settings, RefreshCw, Github, Moon, Sun, Monitor } from 'lucide-react';
 import { Language, UI_COPY } from '../data/localization';
 
 interface HeaderProps {
@@ -13,6 +13,9 @@ interface HeaderProps {
   onOpenGitHubSupport: () => void;
   language: Language;
   onToggleLanguage: () => void;
+  themeMode: ThemeMode;
+  resolvedTheme: Exclude<ThemeMode, 'system'>;
+  onToggleTheme: () => void;
 }
 
 export default function Header({
@@ -26,6 +29,9 @@ export default function Header({
   onOpenGitHubSupport,
   language,
   onToggleLanguage,
+  themeMode,
+  resolvedTheme,
+  onToggleTheme,
 }: HeaderProps) {
   const copy = UI_COPY[language].header;
   const saveTitle = isSavingReading
@@ -33,6 +39,19 @@ export default function Header({
     : canSaveReading
       ? copy.saveTitle
       : copy.saveDisabledTitle;
+  const ThemeIcon = themeMode === 'dark' ? Moon : themeMode === 'light' ? Sun : Monitor;
+  const themeTitle =
+    language === 'zh'
+      ? themeMode === 'dark'
+        ? '深色模式，点击切换到浅色模式'
+        : themeMode === 'light'
+          ? '浅色模式，点击切换到跟随系统'
+          : `跟随系统（当前${resolvedTheme === 'dark' ? '深色' : '浅色'}），点击切换到深色模式`
+      : themeMode === 'dark'
+        ? 'Dark mode, switch to light mode'
+        : themeMode === 'light'
+          ? 'Light mode, switch to system mode'
+          : `System mode (${resolvedTheme}), switch to dark mode`;
 
   return (
     <header className="liquid-glass-bar fixed top-0 w-full z-50 border-b border-white/10 flex justify-between items-center px-4 md:px-6 h-16 transition-all duration-300">
@@ -59,19 +78,27 @@ export default function Header({
         )}
         
         <div className="flex min-w-0 items-center gap-2">
-          <Sparkles className="w-5 h-5 text-[#a5e7ff] drop-shadow-[0_0_8px_rgba(165,231,255,0.8)]" />
+          <Sparkles className="w-5 h-5 text-[var(--theme-accent)] drop-shadow-[0_0_8px_rgba(165,231,255,0.8)]" />
           <h1 
             onClick={onNavigateHome}
-            className="font-serif text-lg md:text-xl tracking-widest text-[#a5e7ff] drop-shadow-[0_0_8px_rgba(165,231,255,0.8)] cursor-pointer select-none font-bold whitespace-nowrap"
+            className="max-w-[34vw] cursor-pointer select-none truncate whitespace-nowrap font-serif text-lg font-bold tracking-widest text-[var(--theme-accent)] drop-shadow-[0_0_8px_rgba(165,231,255,0.8)] md:max-w-none md:text-xl"
           >
             {copy.title}
           </h1>
           <button
             onClick={onOpenGitHubSupport}
             title={copy.githubSupportTitle}
-            className="liquid-glass-control flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#bbc9cf] transition-all hover:text-white hover:drop-shadow-[0_0_8px_rgba(165,231,255,0.8)] active:scale-95 duration-200 cursor-pointer"
+            className="liquid-glass-control flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--theme-muted)] transition-all duration-200 hover:text-[var(--theme-fg-strong)] hover:drop-shadow-[0_0_8px_rgba(165,231,255,0.8)] active:scale-95"
           >
             <Github className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onToggleTheme}
+            title={themeTitle}
+            aria-label={themeTitle}
+            className="liquid-glass-control flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--theme-muted)] transition-all duration-200 hover:text-[var(--theme-fg-strong)] hover:drop-shadow-[0_0_8px_rgba(165,231,255,0.8)] active:scale-95"
+          >
+            <ThemeIcon className="w-4 h-4" />
           </button>
         </div>
       </div>

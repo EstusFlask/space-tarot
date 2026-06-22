@@ -7,6 +7,8 @@ export type TarotScreen =
   | 'reveal' 
   | 'chat';
 
+export type ThemeMode = 'dark' | 'light' | 'system';
+
 export interface DrawnCard {
   card: TarotCard;
   orientation: CardOrientation;
