@@ -8,6 +8,7 @@ import OracleChatView from './components/OracleChatView';
 import ReadingSnapshot from './components/ReadingSnapshot';
 import PageTransition from './components/PageTransition';
 import AISettingsDialog from './components/AISettingsDialog';
+import GitHubSupportDialog from './components/GitHubSupportDialog';
 import { TarotScreen, DrawnCard, ChatMessage } from './types';
 import { getTarotImageByName, TAROT_DECK, TAROT_SPREADS, TarotSpread } from './data/tarotCards';
 import { DEFAULT_LANGUAGE, Language } from './data/localization';
@@ -118,6 +119,7 @@ export default function App() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(debugReading?.messages ?? []);
   const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
   const [showAISettings, setShowAISettings] = useState(false);
+  const [showGitHubSupport, setShowGitHubSupport] = useState(false);
   const [aiSettings, setAISettings] = useState<AISettings>(() => readAISettings());
   const [assetRefreshKey, setAssetRefreshKey] = useState(0);
   const snapshotRef = useRef<HTMLDivElement | null>(null);
@@ -307,6 +309,7 @@ export default function App() {
         language={language}
         onToggleLanguage={handleToggleLanguage}
         onOpenAISettings={() => setShowAISettings(true)}
+        onOpenGitHubSupport={() => setShowGitHubSupport(true)}
       />
 
       {/* Main Content Area Container with padding for floating action bars */}
@@ -336,6 +339,12 @@ export default function App() {
         language={language}
         onCancel={() => setShowAISettings(false)}
         onSave={handleSaveAISettings}
+      />
+
+      <GitHubSupportDialog
+        open={showGitHubSupport}
+        language={language}
+        onClose={() => setShowGitHubSupport(false)}
       />
 
       </div>

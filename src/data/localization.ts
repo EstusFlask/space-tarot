@@ -277,7 +277,17 @@ export const UI_COPY = {
       saveDisabledTitle: '翻开所有卡牌后可保存',
       savingTitle: '正在保存截图',
       aiSettingsTitle: 'AI 设置',
+      githubSupportTitle: '支持 GitHub 项目',
       languageLabel: 'EN',
+    },
+    githubSupport: {
+      title: 'GitHub 支持',
+      subtitle: '免费点亮一颗星',
+      body:
+        '如果你觉得星空塔罗好玩，或者这个小站做得还不错，可以在 GitHub 给项目一个免费的 Star 吗？这会很直接地鼓励我继续打磨它。',
+      repoLabel: '仓库',
+      openGitHub: '去 GitHub 上支持',
+      close: '关闭',
     },
     aiSettings: {
       title: 'AI 设置',
@@ -415,7 +425,17 @@ export const UI_COPY = {
       saveDisabledTitle: 'Reveal all cards before saving',
       savingTitle: 'Saving Screenshot',
       aiSettingsTitle: 'AI Settings',
+      githubSupportTitle: 'Support on GitHub',
       languageLabel: '中文',
+    },
+    githubSupport: {
+      title: 'GitHub Support',
+      subtitle: 'Light up a free star',
+      body:
+        'If Space Tarot feels fun or thoughtfully made, would you consider giving the project a free GitHub Star? It is a small click that genuinely helps me keep polishing it.',
+      repoLabel: 'Repository',
+      openGitHub: 'Support on GitHub',
+      close: 'Close',
     },
     aiSettings: {
       title: 'AI Settings',

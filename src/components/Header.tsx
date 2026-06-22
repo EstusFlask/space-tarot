@@ -1,5 +1,5 @@
 import { TarotScreen } from '../types';
-import { Home, Sparkles, Download, Settings, RefreshCw } from 'lucide-react';
+import { Home, Sparkles, Download, Settings, RefreshCw, Github } from 'lucide-react';
 import { Language, UI_COPY } from '../data/localization';
 
 interface HeaderProps {
@@ -10,6 +10,7 @@ interface HeaderProps {
   canSaveReading: boolean;
   isSavingReading: boolean;
   onOpenAISettings: () => void;
+  onOpenGitHubSupport: () => void;
   language: Language;
   onToggleLanguage: () => void;
 }
@@ -22,6 +23,7 @@ export default function Header({
   canSaveReading,
   isSavingReading,
   onOpenAISettings,
+  onOpenGitHubSupport,
   language,
   onToggleLanguage,
 }: HeaderProps) {
@@ -33,8 +35,8 @@ export default function Header({
       : copy.saveDisabledTitle;
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-[#0f131f]/40 backdrop-blur-xl border-b border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] flex justify-between items-center px-6 h-16 transition-all duration-300">
-      <div className="flex items-center gap-4">
+    <header className="fixed top-0 w-full z-50 bg-[#0f131f]/40 backdrop-blur-xl border-b border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] flex justify-between items-center px-4 md:px-6 h-16 transition-all duration-300">
+      <div className="flex min-w-0 items-center gap-3 md:gap-4">
         {currentScreen !== 'spread_selection' && (
           <div className="flex items-center gap-2">
             <button
@@ -56,18 +58,25 @@ export default function Header({
           </div>
         )}
         
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <Sparkles className="w-5 h-5 text-[#a5e7ff] drop-shadow-[0_0_8px_rgba(165,231,255,0.8)]" />
           <h1 
             onClick={onNavigateHome}
-            className="font-serif text-lg md:text-xl tracking-widest text-[#a5e7ff] drop-shadow-[0_0_8px_rgba(165,231,255,0.8)] cursor-pointer select-none font-bold"
+            className="font-serif text-lg md:text-xl tracking-widest text-[#a5e7ff] drop-shadow-[0_0_8px_rgba(165,231,255,0.8)] cursor-pointer select-none font-bold whitespace-nowrap"
           >
             {copy.title}
           </h1>
+          <button
+            onClick={onOpenGitHubSupport}
+            title={copy.githubSupportTitle}
+            className="glass-panel flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#bbc9cf] transition-all hover:text-white hover:drop-shadow-[0_0_8px_rgba(165,231,255,0.8)] active:scale-95 duration-200 cursor-pointer"
+          >
+            <Github className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-3">
         <button
           onClick={onToggleLanguage}
           title={language === 'zh' ? '切换为 English' : 'Switch to 中文'}
