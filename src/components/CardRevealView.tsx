@@ -52,7 +52,7 @@ export default function CardRevealView({
   const [aiError, setAiError] = useState<string | null>(null);
   const [showQuestionPrompt, setShowQuestionPrompt] = useState(false);
   const meaningPanelRef = useRef<HTMLDivElement>(null);
-  const topAnchorRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const copy = UI_COPY[language].cardReveal;
   const localizedSpread = getLocalizedSpread(spread, language);
   const commonCopy = UI_COPY[language].common;
@@ -60,7 +60,7 @@ export default function CardRevealView({
 
   const closeMeaningPanel = () => {
     setIsClosingMeaning(true);
-    topAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCardClick = (index: number) => {
@@ -182,27 +182,65 @@ export default function CardRevealView({
     localizedSpread.positions[index]?.compactName ?? localizedSpread.positions[index]?.name ?? '';
 
   return (
-    <div className="w-full flex flex-col items-center min-h-[calc(100vh-100px)] pt-24 md:pt-32 text-center pb-32">
-      <div ref={topAnchorRef} className="h-0 w-0" aria-hidden />
-      {/* Upper info panel */}
-      <div className="text-center mb-6 w-full px-4">
-        <h2 className="font-serif text-3xl md:text-4xl text-[#dfe2f3] tracking-wide mb-1">
-          {!allFlipped ? copy.titlePending : copy.titleComplete}
-        </h2>
-        <p className="font-sans text-xs md:text-sm text-[#bbc9cf] max-w-lg mx-auto">
-          {!allFlipped ? copy.subtitlePending : copy.subtitleComplete}
-        </p>
+    <div
+      ref={scrollContainerRef}
+      className="w-full flex flex-col items-center h-screen overflow-y-auto chat-scroll pt-24 md:pt-32 text-center pb-16"
+      style={{ scrollbarGutter: 'stable both-edges' }}
+    >
+      {/* Upper info panel + actions, framed in liquid glass */}
+      <div className="w-full px-4 mb-8 shrink-0">
+        <div className="liquid-glass spread-intro-glass mx-auto max-w-2xl rounded-[28px] border border-white/10 px-6 py-5 md:px-10 md:py-7 text-center">
+          <h2 className="font-serif text-3xl md:text-4xl text-[#dfe2f3] tracking-wide mb-1">
+            {!allFlipped ? copy.titlePending : copy.titleComplete}
+          </h2>
+          <p className="font-sans text-xs md:text-sm text-[#bbc9cf] max-w-lg mx-auto">
+            {!allFlipped ? copy.subtitlePending : copy.subtitleComplete}
+          </p>
 
-        {question && (
-          <div className="liquid-glass-chip mt-3 inline-block border border-[#a5e7ff]/20 rounded-full px-4 py-1 font-sans text-xs text-[#a5e7ff] tracking-wide">
-            {copy.focusQuery} <span className="italic text-white">"{question}"</span>
+          {question && (
+            <div className="liquid-glass-chip mt-3 inline-block border border-[#a5e7ff]/20 rounded-full px-4 py-1 font-sans text-xs text-[#a5e7ff] tracking-wide">
+              {copy.focusQuery} <span className="italic text-white">"{question}"</span>
+            </div>
+          )}
+
+          <div className="mt-6 flex justify-center">
+            {!allFlipped ? (
+              <button
+                onClick={handleRevealAll}
+                className="liquid-glass-control px-8 py-3 rounded-full border border-[#a5e7ff]/30 text-[#a5e7ff] hover:bg-[#a5e7ff]/10 active:scale-95 transition-all text-xs font-bold tracking-widest uppercase cursor-pointer"
+              >
+                {copy.revealAll}
+              </button>
+            ) : (
+              <button
+                onClick={handleConsultOracle}
+                disabled={isAiLoading}
+                className={`liquid-glass-control px-8 py-3.5 rounded-full font-serif font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-2 transition-all ${
+                  isAiLoading
+                    ? 'text-gray-500 cursor-not-allowed border border-white/10'
+                    : 'border border-[#fface8]/30 text-[#fface8] hover:bg-[#fface8]/10 active:scale-95 cursor-pointer'
+                }`}
+              >
+                {isAiLoading ? (
+                  <>
+                    {copy.consulting}
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  </>
+                ) : (
+                  <>
+                    {copy.askOracle}
+                    <ArrowRight className="w-4 h-4 animate-pulse" />
+                  </>
+                )}
+              </button>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* RENDER THE CORRESPONDING SPREAD LAYOUT */}
       {spread.id === 'yesno' && (
-        <div className="relative w-full max-w-sm h-96 flex items-center justify-center my-6">
+        <div className="relative w-full max-w-sm h-96 shrink-0 flex items-center justify-center my-6">
           <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-48 h-12 bg-[#a5e7ff]/10 rounded-full blur-2xl pointer-events-none" />
 
           <TarotCardFlipItem
@@ -438,49 +476,6 @@ export default function CardRevealView({
           </div>
         </div>
       )}
-
-      {/* Global Actions Bar at the bottom of reveal */}
-      <ViewportPortal>
-        <div className="liquid-glass-bar fixed inset-x-0 bottom-0 z-40 w-full border-t border-white/5 px-4 py-4">
-          <div className="mx-auto flex w-full max-w-2xl items-center justify-center gap-4">
-        {!allFlipped ? (
-          <button
-            onClick={handleRevealAll}
-            className="liquid-glass-control px-6 py-3 rounded-full border border-[#a5e7ff]/30 text-[#a5e7ff] hover:bg-[#a5e7ff]/10 active:scale-95 transition-all text-xs font-bold tracking-widest uppercase cursor-pointer"
-          >
-            {copy.revealAll}
-          </button>
-        ) : (
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-between">
-            <span className="text-xs text-[#bbc9cf] text-left hidden sm:inline leading-tight max-w-[260px]">
-              {copy.allDrawnHint}
-            </span>
-            <button
-              onClick={handleConsultOracle}
-              disabled={isAiLoading}
-              className={`w-full sm:w-auto px-8 py-3.5 rounded-full font-serif font-bold text-xs ${
-                isAiLoading
-                  ? 'liquid-glass-chip text-gray-500 cursor-not-allowed border border-gray-700'
-                  : 'liquid-glass-primary text-black hover:opacity-90 active:scale-95 cursor-pointer'
-              } tracking-widest uppercase flex items-center justify-center gap-2`}
-            >
-              {isAiLoading ? (
-                <>
-                  {copy.consulting}
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                </>
-              ) : (
-                <>
-                  {copy.askOracle}
-                  <ArrowRight className="w-4 h-4 animate-pulse" />
-                </>
-              )}
-            </button>
-          </div>
-        )}
-          </div>
-        </div>
-      </ViewportPortal>
 
       {/* Embedded loader during consult */}
       {isAiLoading && (
