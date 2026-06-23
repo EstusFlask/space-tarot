@@ -97,21 +97,42 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
     slotIndex: number,
     fromRotation: number,
     toRotation: number,
+    preferVisibleLanding = false,
   ) => {
     if (!fromElement || !toElement) return false;
 
     const fromRect = fromElement.getBoundingClientRect();
     const toRect = toElement.getBoundingClientRect();
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const isTouchViewport = window.matchMedia('(max-width: 1024px), (pointer: coarse)').matches;
+    const isTargetVisible =
+      toRect.bottom > 16 &&
+      toRect.top < viewportHeight - 16 &&
+      toRect.right > 16 &&
+      toRect.left < viewportWidth - 16;
+    const shouldUseVisibleLanding = preferVisibleLanding && (isTouchViewport || !isTargetVisible);
+    const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), Math.max(min, max));
     const fromX = fromRect.left;
     const fromY = fromRect.top;
-    const toX = toRect.left + toRect.width / 2 - fromRect.width / 2;
-    const toY = toRect.top + toRect.height / 2 - fromRect.height / 2;
-    const travelX = toX - fromX;
-    const travelY = toY - fromY;
+    const slotToX = toRect.left + toRect.width / 2 - fromRect.width / 2;
+    const slotToY = toRect.top + toRect.height / 2 - fromRect.height / 2;
+    const wheelRect = wheelAreaRef.current?.getBoundingClientRect();
+    const visibleToX = shouldUseVisibleLanding && wheelRect
+      ? clamp(wheelRect.left + wheelRect.width / 2 - fromRect.width / 2, 24, viewportWidth - fromRect.width - 24)
+      : slotToX;
+    const visibleToY = shouldUseVisibleLanding && wheelRect
+      ? clamp(wheelRect.top + wheelRect.height / 2 - fromRect.height / 2, 64, viewportHeight - fromRect.height - 64)
+      : slotToY;
+    const travelX = visibleToX - fromX;
+    const travelY = visibleToY - fromY;
     const lift = Math.min(120, Math.max(54, Math.hypot(travelX, travelY) * 0.14));
     const midX = fromX + travelX * 0.55;
-    const midY = Math.min(fromY, toY) - lift;
-    const toScale = Math.max(0.34, Math.min(2.4, Math.min(toRect.width / fromRect.width, toRect.height / fromRect.height)));
+    const midY = Math.min(fromY, visibleToY) - lift;
+    const toScale = shouldUseVisibleLanding
+      ? 1.18
+      : Math.max(0.34, Math.min(2.4, Math.min(toRect.width / fromRect.width, toRect.height / fromRect.height)));
+    const durationMs = shouldUseVisibleLanding ? 1120 : 680;
 
     const flightId = flightIdRef.current++;
 
@@ -127,12 +148,13 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
           '--flight-from-y': `${fromY}px`,
           '--flight-mid-x': `${midX}px`,
           '--flight-mid-y': `${midY}px`,
-          '--flight-to-x': `${toX}px`,
-          '--flight-to-y': `${toY}px`,
+          '--flight-to-x': `${visibleToX}px`,
+          '--flight-to-y': `${visibleToY}px`,
           '--flight-from-rotation': `${fromRotation}deg`,
           '--flight-mid-rotation': `${(fromRotation + toRotation) / 2 - 8}deg`,
           '--flight-to-rotation': `${toRotation}deg`,
           '--flight-to-scale': `${toScale}`,
+          '--flight-duration': `${durationMs}ms`,
         } as CSSProperties,
       },
     ]);
@@ -141,7 +163,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
       setFlights(current => current.filter(item => item.id !== flightId));
       setReturningSlotIndexes(current => current.filter(index => index !== slotIndex));
       flightTimeoutIds.current = flightTimeoutIds.current.filter(id => id !== timeoutId);
-    }, 760);
+    }, durationMs + 140);
 
     flightTimeoutIds.current.push(timeoutId);
 
@@ -189,6 +211,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
       slotIndex,
       getWheelCardRotation(slotIndex),
       0,
+      true,
     );
 
     setDrawn([

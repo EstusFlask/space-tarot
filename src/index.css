@@ -372,7 +372,7 @@
 }
 
 .tarot-card-flight {
-  animation: tarot-card-flight 680ms cubic-bezier(0.18, 0.86, 0.22, 1) forwards;
+  animation: tarot-card-flight var(--flight-duration, 680ms) cubic-bezier(0.18, 0.86, 0.22, 1) forwards;
   transform-origin: center center;
   will-change: transform, opacity, filter;
 }
@@ -386,9 +386,14 @@
   16% {
     opacity: 1;
   }
-  55% {
+  52% {
     filter: drop-shadow(0 0 20px rgba(255, 172, 232, 0.48));
     transform: translate3d(var(--flight-mid-x), var(--flight-mid-y), 0) scale(1.12) rotate(var(--flight-mid-rotation));
+  }
+  76% {
+    opacity: 0.96;
+    filter: drop-shadow(0 0 14px rgba(165, 231, 255, 0.45));
+    transform: translate3d(var(--flight-to-x), var(--flight-to-y), 0) scale(var(--flight-to-scale)) rotate(var(--flight-to-rotation));
   }
   100% {
     opacity: 0.96;
