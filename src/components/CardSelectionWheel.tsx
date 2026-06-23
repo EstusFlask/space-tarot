@@ -10,6 +10,14 @@ import cardBackNightImage from '../../images/card_back/card_back_night.png?url';
 import RetryingImage from './RetryingImage';
 
 const TOTAL_CARDS_IN_WHEEL = 78;
+// Hand-of-cards fan: every card is rotated a constant angular step about a shared
+// pivot far below, so the spread curves like a real fan and each card's tilt is
+// tangent to the arc. Center card is highest and on top; wings sweep down both sides.
+const FAN_MID_INDEX = (TOTAL_CARDS_IN_WHEEL - 1) / 2;
+const FAN_MAX_TILT_DEG = 26; // tilt of the outermost cards (fan "openness")
+const FAN_STEP_RAD = ((FAN_MAX_TILT_DEG / FAN_MID_INDEX) * Math.PI) / 180;
+const FAN_LIFT_HEADROOM = 30; // top breathing room so a lifted card never clips
+
 
 interface CardSelectionWheelProps {
   spread: TarotSpread;
@@ -33,6 +41,7 @@ interface CardFlight {
 export default function CardSelectionWheel({ spread, onCardsSelected, language, resolvedTheme }: CardSelectionWheelProps) {
   const [drawn, setDrawn] = useState<DrawSelection[]>([]);
   const [armedSlotIndex, setArmedSlotIndex] = useState<number | null>(null);
+  const [hoveredSlotIndex, setHoveredSlotIndex] = useState<number | null>(null);
   const [question, setQuestion] = useState('');
   const [deck, setDeck] = useState<TarotCard[]>([]);
   const [isQuestionDirty, setIsQuestionDirty] = useState(false);
@@ -40,6 +49,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
   const [flights, setFlights] = useState<CardFlight[]>([]);
   const [returningSlotIndexes, setReturningSlotIndexes] = useState<number[]>([]);
   const wheelAreaRef = useRef<HTMLDivElement | null>(null);
+  const fanScrollRef = useRef<HTMLDivElement | null>(null);
   const questionInputRef = useRef<HTMLInputElement | null>(null);
   const wheelCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const positionCardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -55,6 +65,13 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
   useEffect(() => {
     setDeck(cryptoShuffle(TAROT_DECK));
   }, []);
+
+  // Center the horizontal scroller on the middle of the fan once it can overflow.
+  useEffect(() => {
+    const scroller = fanScrollRef.current;
+    if (!scroller) return;
+    scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
+  }, [availableWheelWidth]);
 
   useEffect(() => {
     const updateAvailableWidth = () => {
@@ -91,8 +108,10 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
   const isSelectionComplete = drawn.length >= totalToDraw;
 
   const getWheelCardRotation = (slotIndex: number) => {
-    const angle = (slotIndex / TOTAL_CARDS_IN_WHEEL) * 2 * Math.PI;
-    return (angle * 180) / Math.PI + 90;
+    // Constant angular step about a shared pivot below the fan — the card's tilt is
+    // tangent to the arc, so the spread splays like a real hand of cards. Pure
+    // function of the slot, so the flight animation and the resting card agree.
+    return ((slotIndex - FAN_MID_INDEX) * FAN_STEP_RAD * 180) / Math.PI;
   };
 
   const startCardFlight = (
@@ -269,14 +288,22 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
     questionInputRef.current?.blur();
   };
 
-  // Generate coordinates for fanned circle (exactly 78 visible cards mapping to a full Tarot deck)
-  const wheelOuterDiameter = Math.min(560, Math.max(272, availableWheelWidth));
-  const cardHeight = Math.round(Math.min(80, Math.max(60, wheelOuterDiameter * (80 / 560))));
+  // Hand-of-cards fan geometry. Every card sits on a circular arc and is rotated a
+  // constant angular step, so the spread splays open like a real fan (this is what
+  // made the original wheel feel "fan-like"). Spacing is a comfortable fraction of a
+  // card so each one stays tappable; the fan is wider than the viewport and lives in a
+  // horizontal scroller (swipe on mobile, no page scroll), auto-centred on load.
+  const isCompact = availableWheelWidth < 560;
+  const cardHeight = isCompact ? 92 : 108;
   const cardWidth = Math.round(cardHeight * (2 / 3));
-  const radius = Math.round((wheelOuterDiameter - cardHeight) / 2);
-  const wheelDiameter = radius * 2;
-  const wheelFrameHeight = wheelOuterDiameter + 24;
-  const centerCounterSize = Math.round(Math.min(128, Math.max(92, wheelOuterDiameter * 0.28)));
+  const centerStep = Math.round(cardWidth * 0.32); // horizontal reveal between neighbours near the center
+  const fanRadius = Math.round(centerStep / FAN_STEP_RAD); // arc radius that yields that spacing
+  const maxAngle = FAN_MID_INDEX * FAN_STEP_RAD; // half-span of the fan (= FAN_MAX_TILT_DEG)
+  const fanHalfWidth = fanRadius * Math.sin(maxAngle);
+  const fanDrop = Math.round(fanRadius * (1 - Math.cos(maxAngle))); // wing drop below the center card
+  const fanContentWidth = Math.round(2 * fanHalfWidth + cardWidth);
+  const wheelFrameHeight = Math.round(cardHeight + fanDrop + FAN_LIFT_HEADROOM + 44);
+  const centerCounterSize = isCompact ? 88 : 112;
 
   return (
     <div className="w-full flex flex-col items-center justify-start min-h-[calc(100vh-80px)] pt-20 pb-20 text-center relative overflow-hidden">
@@ -392,21 +419,22 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
         </div>
       </div>
 
-      {/* Floating Circle Tarot deck - Taller container height and extra margins to avoid overlap */}
+      {/* Hand-of-cards fan (horizontally scrollable so the full spread is reachable on any width) */}
       <div
         ref={wheelAreaRef}
-        className="relative w-full my-8 md:my-10 flex items-center justify-center z-10 select-none touch-pan-y"
+        className="relative w-full my-8 md:my-10 z-10 select-none"
         style={{ height: `${wheelFrameHeight}px` }}
       >
-        {/* Subtle center ambient light source */}
+        {/* Soft ambient glow + drawn counter live in the viewport-centred layer (NOT in the
+            scrolling content) so they stay put and aligned while the fan scrolls. */}
+        {resolvedTheme !== 'light' && (
+          <div
+            className="absolute left-1/2 bottom-0 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,_rgba(165,231,255,0.08)_0%,_transparent_75%)] pointer-events-none blur-3xl z-0"
+            style={{ width: `${Math.min(560, fanContentWidth) * 0.7}px`, height: `${cardHeight * 1.5}px` }}
+          />
+        )}
         <div
-          className="absolute rounded-full bg-[radial-gradient(circle,_rgba(165,231,255,0.08)_0%,_transparent_75%)] pointer-events-none blur-3xl"
-          style={{ width: `${wheelDiameter * 0.64}px`, height: `${wheelDiameter * 0.64}px` }}
-        />
-
-        {/* Drawn Counter Indicator */}
-        <div
-          className="liquid-glass absolute z-20 flex flex-col items-center justify-center rounded-full border border-[#a5e7ff]/20"
+          className="liquid-glass absolute left-1/2 bottom-1 -translate-x-1/2 z-20 flex flex-col items-center justify-center rounded-full border border-[#a5e7ff]/20 pointer-events-none"
           style={{ width: `${centerCounterSize}px`, height: `${centerCounterSize}px` }}
         >
           <span className="font-serif text-3xl font-bold text-[#fface8]">{drawn.length}</span>
@@ -416,70 +444,90 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
           {drawn.length === totalToDraw && <div className="w-1.5 h-1.5 rounded-full bg-[#ffdb40] animate-ping mt-1" />}
         </div>
 
-        {/* Dynamic fan card wheel */}
         <div
-          className="relative flex items-center justify-center"
-          style={{ width: `${wheelDiameter}px`, height: `${wheelDiameter}px` }}
+          ref={fanScrollRef}
+          className="fan-scroll absolute inset-0 overflow-x-auto overflow-y-hidden flex items-end justify-center"
+          style={{ touchAction: 'pan-x' }}
         >
-          {wheelSlotIndexes.map((i) => {
-            const angle = (i / TOTAL_CARDS_IN_WHEEL) * 2 * Math.PI;
-            const x = radius * Math.cos(angle);
-            const y = radius * Math.sin(angle);
-            const rotationDeg = getWheelCardRotation(i); // Align perpendicular to radius
+          {/* Fanned card spread. Cards are offset down by FAN_LIFT_HEADROOM so a lifted center card never clips the top. */}
+          <div
+            className="relative shrink-0"
+            style={{ width: `${fanContentWidth}px`, height: `${wheelFrameHeight}px` }}
+          >
+            {wheelSlotIndexes.map((i) => {
+              // Circular-arc fan: each card rotated a constant angular step about a pivot
+              // below, positioned on the arc so the spread curves and splays like a real fan.
+              const angle = (i - FAN_MID_INDEX) * FAN_STEP_RAD;
+              const left = Math.round(fanContentWidth / 2 + fanRadius * Math.sin(angle) - cardWidth / 2);
+              const yOffset = Math.round(fanRadius * (1 - Math.cos(angle)));
+              const rotationDeg = getWheelCardRotation(i);
 
-            // Check if this visual slot has been drawn or selected
-            const isSelected = drawn.some(item => item.slotIndex === i) || returningSlotIndexes.includes(i);
-            const isRaised = !isSelected && armedSlotIndex === i;
+              // Check if this visual slot has been drawn or selected
+              const isSelected = drawn.some(item => item.slotIndex === i) || returningSlotIndexes.includes(i);
+              const isArmed = !isSelected && armedSlotIndex === i;
+              const isHovered = !isSelected && !isArmed && hoveredSlotIndex === i;
 
-            // Dynamically calculate z-index based on the card's vertical height (y coordinate)
-            // This ensures that cards higher up perfectly overlap cards further down,
-            // creating a continuous, seamless circular overlap fan without any abrupt breakpoint.
-            const itemZIndex = isSelected ? 5 : isRaised ? 300 : Math.round(((radius - y) / radius) * 100) + 12;
+              // Natural fan stacking: center card highest, easing down to both wings so
+              // every card tucks under its inward neighbour. Hover only lifts the card a
+              // little WITHOUT popping it above its neighbours, so no card ever buries the
+              // one beside it — every exposed strip stays clickable. Only an armed (tapped)
+              // card pops to the very top for confirmation.
+              const distFromCenter = Math.abs(i - FAN_MID_INDEX);
+              const baseZ = Math.round(TOTAL_CARDS_IN_WHEEL - distFromCenter) + 12;
+              const itemZIndex = isSelected ? 5 : isArmed ? 300 : isHovered ? baseZ + 1 : baseZ;
+              const lift = isArmed ? 22 : isHovered ? 12 : 0;
 
-            return (
-              <div
-                key={i}
-                ref={(node) => {
-                  wheelCardRefs.current[i] = node;
-                }}
-                onPointerDown={(event) => {
-                  lastPointerTypeRef.current = event.pointerType;
-                }}
-                onClick={() => handleCardClick(i)}
-                style={{
-                  position: 'absolute',
-                  transform: `translate3d(${x}px, ${isRaised ? y - 8 : y}px, 0) rotate(${rotationDeg}deg)`,
-                  transition: 'transform 0.28s cubic-bezier(0.165, 0.84, 0.44, 1), opacity 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
-                  zIndex: itemZIndex,
-                  opacity: isSelected ? 0.0 : 1, // Make it completely disappear from the wheel upon draw
-                  transformOrigin: 'center center',
-                  pointerEvents: isSelected ? 'none' : 'auto',
-                  width: `${cardWidth}px`,
-                  height: `${cardHeight}px`,
-                }}
-                className={`rounded border ${
-                  isSelected
-                    ? 'border-gray-800 bg-gray-900/10'
-                    : isRaised
-                      ? 'border-[#a5e7ff] bg-[#1b1f2c]/90'
-                    : 'border-[#a5e7ff]/30 hover:border-[#a5e7ff] bg-[#1b1f2c]/85'
-                } tarot-wheel-card flex items-center justify-center cursor-pointer shadow-[0_4px_10px_rgba(0,0,0,0.4)]`}
-              >
-                {!isSelected && (
-                  <div className="w-full h-full p-0.5 pointer-events-none">
-                    <RetryingImage
-                      src={cardBackImage}
-                      alt=""
-                      aria-hidden="true"
-                      draggable={false}
-                      decoding="async"
-                      className="w-full h-full rounded object-contain"
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
+              return (
+                <div
+                  key={i}
+                  ref={(node) => {
+                    wheelCardRefs.current[i] = node;
+                  }}
+                  onPointerDown={(event) => {
+                    lastPointerTypeRef.current = event.pointerType;
+                  }}
+                  onMouseEnter={() => setHoveredSlotIndex(i)}
+                  onMouseLeave={() => setHoveredSlotIndex(current => (current === i ? null : current))}
+                  onClick={() => handleCardClick(i)}
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: `${FAN_LIFT_HEADROOM}px`,
+                    transform: `translate3d(${left}px, ${yOffset - lift}px, 0) rotate(${rotationDeg}deg)`,
+                    transition: 'transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.2s ease, border-color 0.2s ease, background-color 0.2s ease',
+                    zIndex: itemZIndex,
+                    opacity: isSelected ? 0.0 : 1, // Make it completely disappear from the fan upon draw
+                    transformOrigin: 'center bottom',
+                    pointerEvents: isSelected ? 'none' : 'auto',
+                    width: `${cardWidth}px`,
+                    height: `${cardHeight}px`,
+                  }}
+                  className={`rounded border ${
+                    isSelected
+                      ? 'border-gray-800 bg-gray-900/10'
+                      : isArmed || isHovered
+                        ? 'border-[#a5e7ff] bg-[#1b1f2c]/90'
+                      : 'border-[#a5e7ff]/30 hover:border-[#a5e7ff] bg-[#1b1f2c]/85'
+                  } tarot-wheel-card flex items-center justify-center cursor-pointer ${
+                    resolvedTheme === 'light' ? '' : 'shadow-[0_4px_10px_rgba(0,0,0,0.4)]'
+                  }`}
+                >
+                  {!isSelected && (
+                    <div className="w-full h-full p-0.5 pointer-events-none">
+                      <RetryingImage
+                        src={cardBackImage}
+                        alt=""
+                        aria-hidden="true"
+                        draggable={false}
+                        decoding="async"
+                        className="w-full h-full rounded object-contain"
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

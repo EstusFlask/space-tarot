@@ -365,10 +365,13 @@
   backdrop-filter: blur(24px);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .tarot-wheel-card:hover {
-    z-index: 300 !important;
-  }
+.fan-scroll {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+.fan-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .tarot-card-flight {
@@ -405,6 +408,44 @@
 @media (prefers-reduced-motion: reduce) {
   .tarot-card-flight {
     animation-duration: 120ms;
+  }
+}
+
+/* Card meaning panel enter/exit */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.animate-fade-out {
+  animation: fade-out 200ms ease-in both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-fade-out {
+    animation-duration: 1ms;
   }
 }
 

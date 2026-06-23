@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DrawnCard } from '../types';
 import { getLocalizedCardName, getTarotImageByName, TarotSpread } from '../data/tarotCards';
-import { Sparkles, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
+import { Sparkles, ArrowRight, RefreshCw, AlertCircle, X } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
 import type { ThemeMode } from '../types';
 import cardBackDayImage from '../../images/card_back/card_back_day.png?url';
@@ -12,6 +12,7 @@ import ViewportPortal from './ViewportPortal';
 import type { AISettings } from '../utils/aiSettings';
 import { hasAIKey } from '../utils/aiSettings';
 import { requestTarotInterpretation } from '../utils/glmClient';
+import { localizeKeyword } from '../utils/keywords';
 
 interface CardRevealViewProps {
   spread: TarotSpread;
@@ -46,35 +47,30 @@ export default function CardRevealView({
     initialAllRevealed ? drawnCards.map((_, index) => index) : []
   ));
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
+  const [isClosingMeaning, setIsClosingMeaning] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [showQuestionPrompt, setShowQuestionPrompt] = useState(false);
+  const meaningPanelRef = useRef<HTMLDivElement>(null);
+  const topAnchorRef = useRef<HTMLDivElement>(null);
   const copy = UI_COPY[language].cardReveal;
   const localizedSpread = getLocalizedSpread(spread, language);
   const commonCopy = UI_COPY[language].common;
   const cardBackImage = resolvedTheme === 'light' ? cardBackDayImage : cardBackNightImage;
 
-  const localizeKeyword = (keyword: string, cardName: string) => {
-    if (keyword === cardName) {
-      return getLocalizedCardName(cardName, language);
-    }
-
-    if (keyword === 'Upright') {
-      return commonCopy.upright;
-    }
-
-    if (keyword === 'Reversed') {
-      return commonCopy.reversed;
-    }
-
-    return keyword;
+  const closeMeaningPanel = () => {
+    setIsClosingMeaning(true);
+    topAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleCardClick = (index: number) => {
     if (!flipped.includes(index)) {
       setFlipped([...flipped, index]);
+    } else if (selectedCardIndex === index && !isClosingMeaning) {
+      closeMeaningPanel();
     } else {
-      setSelectedCardIndex(selectedCardIndex === index ? null : index);
+      setSelectedCardIndex(index);
+      setIsClosingMeaning(false);
     }
   };
 
@@ -100,7 +96,7 @@ export default function CardRevealView({
           positionDesc: localizedSpread.positions[dc.positionIndex]?.description ?? dc.positionDesc,
           isUpright: dc.isUpright,
           keywords: (dc.isUpright ? dc.card.uprightKeywords : dc.card.reversedKeywords).map(k =>
-            localizeKeyword(k, dc.card.name),
+            localizeKeyword(k, dc.card.name, language),
           ),
           arcana: getLocalizedArcanaLabel(dc.card, language),
           description: dc.card.description,
@@ -168,6 +164,15 @@ export default function CardRevealView({
     onRevealStatusChange(allFlipped);
   }, [allFlipped, onRevealStatusChange]);
 
+  // Gently bring the meaning panel into view without snapping the cards away
+  useEffect(() => {
+    if (selectedCardIndex === null || isClosingMeaning) return;
+    const id = window.setTimeout(() => {
+      meaningPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [selectedCardIndex, isClosingMeaning]);
+
   const getPositionHeading = (index: number) => {
     const position = localizedSpread.positions[drawnCards[index]?.positionIndex ?? index];
     return position?.name ?? copy.positions[index] ?? '';
@@ -177,7 +182,8 @@ export default function CardRevealView({
     localizedSpread.positions[index]?.compactName ?? localizedSpread.positions[index]?.name ?? '';
 
   return (
-    <div className="w-full flex flex-col items-center justify-center min-h-[calc(100vh-100px)] pt-24 md:pt-32 text-center pb-32">
+    <div className="w-full flex flex-col items-center min-h-[calc(100vh-100px)] pt-24 md:pt-32 text-center pb-32">
+      <div ref={topAnchorRef} className="h-0 w-0" aria-hidden />
       {/* Upper info panel */}
       <div className="text-center mb-6 w-full px-4">
         <h2 className="font-serif text-3xl md:text-4xl text-[#dfe2f3] tracking-wide mb-1">
@@ -368,9 +374,28 @@ export default function CardRevealView({
 
       {/* Selected Card Deep Intuitive Deck Drawer details */}
       {selectedCardIndex !== null && (
-        <div className="w-full max-w-lg mx-auto px-4 mt-12 animate-fade-in relative z-20">
-          <div className="liquid-glass rounded-xl p-6 text-left border border-[#a5e7ff]/20">
-            <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-3">
+        <div
+          key={selectedCardIndex}
+          ref={meaningPanelRef}
+          className={`w-full max-w-lg mx-auto px-4 mt-12 relative z-20 ${isClosingMeaning ? 'animate-fade-out' : 'animate-fade-in'}`}
+          onAnimationEnd={(e) => {
+            if (e.target === e.currentTarget && isClosingMeaning) {
+              setSelectedCardIndex(null);
+              setIsClosingMeaning(false);
+            }
+          }}
+        >
+          <div className="liquid-glass relative rounded-xl p-6 text-left border border-[#a5e7ff]/20">
+            <button
+              type="button"
+              onClick={closeMeaningPanel}
+              aria-label={copy.closeMeaning}
+              title={copy.closeMeaning}
+              className="liquid-glass-control absolute top-3 right-3 z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-[#bbc9cf] hover:text-white active:scale-95 transition-all cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex items-center justify-between gap-3 mb-3 border-b border-white/10 pb-3 pr-12">
               <div>
                 <span className="text-xs text-[#fface8] font-serif font-bold uppercase tracking-widest block">
                   {getPositionHeading(selectedCardIndex)}
@@ -382,7 +407,7 @@ export default function CardRevealView({
                   </span>
                 </h4>
               </div>
-              <div className="liquid-glass-chip w-10 h-14 rounded border border-white/10 flex items-center justify-center overflow-hidden">
+              <div className="liquid-glass-chip w-10 h-14 shrink-0 rounded border border-white/10 flex items-center justify-center overflow-hidden">
                 <RetryingImage
                   src={getTarotImageByName(drawnCards[selectedCardIndex].card.name)}
                   alt={getLocalizedCardName(drawnCards[selectedCardIndex].card.name, language)}
@@ -404,8 +429,8 @@ export default function CardRevealView({
                   ? drawnCards[selectedCardIndex].card.uprightKeywords
                   : drawnCards[selectedCardIndex].card.reversedKeywords
                 ).map((k, i) => (
-                  <span key={i} className="liquid-glass-chip border border-white/5 text-[#dfe2f3] text-xs rounded-full px-3 py-0.5">
-                    {k === 'Upright' ? commonCopy.upright : k === 'Reversed' ? commonCopy.reversed : k}
+                  <span key={i} className="liquid-glass-chip border border-white/5 text-[#dfe2f3] text-xs rounded-full px-3 py-0.5 whitespace-nowrap">
+                    {localizeKeyword(k, drawnCards[selectedCardIndex].card.name, language)}
                   </span>
                 ))}
               </div>

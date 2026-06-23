@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { ChatMessage, DrawnCard, ThemeMode } from '../types';
 import { getLocalizedCardName, getTarotSnapshotImageByName, TarotSpread } from '../data/tarotCards';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
+import { localizeKeyword } from '../utils/keywords';
 
 type ResolvedTheme = Exclude<ThemeMode, 'system'>;
 
@@ -207,15 +208,15 @@ const ReadingSnapshot = forwardRef<HTMLDivElement, ReadingSnapshotProps>(functio
                   </h3>
                   <div className={`text-xs mt-1 ${theme.accentClassName}`}>{getLocalizedArcanaLabel(dc.card, language)}</div>
                   <p className={`text-sm leading-7 mt-3 whitespace-pre-line ${theme.bodyClassName}`}>{dc.card.description}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
                     <span className={`text-xs ${theme.goldClassName}`}>{copy.keywords}</span>
                     {keywords.map((keyword, keywordIndex) => (
                       <span
                         key={`${keyword}-${keywordIndex}`}
-                        className={`text-xs border rounded-full px-3 py-1 ${theme.bodyClassName}`}
+                        className={`text-xs border rounded-full px-3 py-1 whitespace-nowrap ${theme.bodyClassName}`}
                         style={theme.keywordStyle}
                       >
-                        {keyword}
+                        {localizeKeyword(keyword, dc.card.name, language)}
                       </span>
                     ))}
                   </div>

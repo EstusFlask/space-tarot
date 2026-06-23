@@ -345,6 +345,7 @@ export const UI_COPY = {
       upright: '正位',
       reversed: '逆位',
       guidanceKeywords: '指引关键词：',
+      closeMeaning: '关闭',
       revealAll: '查看所有卡牌',
       allDrawnHint: '卡牌已抽出并显现。问题已准备就绪。现在可在此启动完整的 AI 星图诊断。',
       askOracle: '询问塔罗',
@@ -496,6 +497,7 @@ export const UI_COPY = {
       upright: 'Upright',
       reversed: 'Reversed',
       guidanceKeywords: 'Guidance Keywords:',
+      closeMeaning: 'Close',
       revealAll: 'Reveal All Cards',
       allDrawnHint:
         'All cards drawn and revealed. Query is prepared. Initiate full celestial AI diagnostics inside.',
