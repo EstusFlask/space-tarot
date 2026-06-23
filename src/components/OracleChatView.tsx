@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, DrawnCard } from '../types';
 import { getLocalizedCardName, getTarotImageByName, TarotSpread } from '../data/tarotCards';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Send, Sparkles, Download, CheckCircle, RefreshCw, ArrowLeft, RotateCcw } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
 import type { AISettings } from '../utils/aiSettings';
@@ -353,7 +354,7 @@ export default function OracleChatView({
 
               <div className={`flex items-start gap-2 ${isAi ? 'justify-start' : 'justify-end'}`}>
                 <div
-                  className={`rounded-2xl px-5 py-4 text-sm leading-relaxed relative overflow-hidden max-w-full ${
+                  className={`rounded-2xl px-5 py-4 text-sm leading-relaxed relative overflow-hidden max-w-full break-words ${
                     isAi
                       ? 'liquid-glass liquid-glass-card oracle-clean-panel border border-white/10 text-[#dfe2f3]'
                       : 'liquid-glass liquid-glass-card oracle-clean-panel border border-[#a5e7ff]/30 text-[#dfe2f3]'
@@ -361,9 +362,10 @@ export default function OracleChatView({
                 >
                 {isAi && <div className="noise-overlay" />}
 
-                <div className={`markdown-body select-text relative z-20 ${isAi ? 'space-y-3' : 'white-space-pre-wrap'}`}>
+                <div className={`markdown-body select-text relative z-20 break-words ${isAi ? 'space-y-3' : 'whitespace-pre-wrap'}`}>
                   {isAi ? (
                     <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
                       components={{
                         h1: ({ node, ...props }) => (
                           <h2
@@ -386,8 +388,21 @@ export default function OracleChatView({
                             {...props}
                           />
                         ),
-                        ul: ({ node, ...props }) => <ul className="list-disc pl-5 space-y-1.5 my-2.5" {...props} />,
-                        li: ({ node, ...props }) => <li className="text-sm font-sans" {...props} />,
+                        ul: ({ node, ...props }) => <ul className="list-disc pl-5 space-y-1.5 my-2.5 marker:text-[#a5e7ff]" {...props} />,
+                        ol: ({ node, ...props }) => <ol className="list-decimal pl-5 space-y-1.5 my-2.5 marker:text-[#a5e7ff] marker:font-bold" {...props} />,
+                        li: ({ node, ...props }) => <li className="text-sm font-sans break-words" {...props} />,
+                        hr: ({ node, ...props }) => (
+                          <hr className="my-4 h-px border-0 bg-gradient-to-r from-transparent via-[#a5e7ff]/50 to-transparent" {...props} />
+                        ),
+                        code: ({ className, children, ...props }) =>
+                          className?.includes('language-') ? (
+                            <code className="font-mono text-[#dfe2f3] text-xs" {...props}>{children}</code>
+                          ) : (
+                            <code className="rounded bg-white/10 px-1 py-0.5 text-[#a5e7ff] font-mono text-[0.85em]" {...props}>{children}</code>
+                          ),
+                        pre: ({ node, ...props }) => (
+                          <pre className="my-2 overflow-x-auto rounded-lg bg-black/30 p-3 text-xs whitespace-pre-wrap break-words" {...props} />
+                        ),
                         strong: ({ node, ...props }) => <strong className="text-[#a5e7ff] font-bold" {...props} />,
                         em: ({ node, ...props }) => <em className="text-[#fface8] italic" {...props} />,
                       }}

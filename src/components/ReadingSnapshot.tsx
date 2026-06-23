@@ -1,5 +1,6 @@
 import { forwardRef, type CSSProperties } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ChatMessage, DrawnCard, ThemeMode } from '../types';
 import { getLocalizedCardName, getTarotSnapshotImageByName, TarotSpread } from '../data/tarotCards';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
@@ -247,6 +248,7 @@ const ReadingSnapshot = forwardRef<HTMLDivElement, ReadingSnapshotProps>(functio
                     </div>
                     <div className={`text-sm leading-7 ${theme.bodyClassName}`}>
                       <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
                         components={{
                           h1: ({ node, ...props }) => <h3 className={`font-serif text-xl mt-4 mb-2 ${theme.accentClassName}`} {...props} />,
                           h2: ({ node, ...props }) => <h4 className={`font-serif text-lg mt-4 mb-2 ${theme.pinkClassName}`} {...props} />,
@@ -254,6 +256,9 @@ const ReadingSnapshot = forwardRef<HTMLDivElement, ReadingSnapshotProps>(functio
                           p: ({ node, ...props }) => <p className="my-2" {...props} />,
                           ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-2 space-y-1" {...props} />,
                           ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-2 space-y-1" {...props} />,
+                          hr: ({ node, ...props }) => (
+                            <hr className={`my-4 h-px border-0 bg-current opacity-40 ${theme.accentClassName}`} {...props} />
+                          ),
                           strong: ({ node, ...props }) => <strong className={theme.accentClassName} {...props} />,
                           em: ({ node, ...props }) => <em className={theme.pinkClassName} {...props} />,
                         }}

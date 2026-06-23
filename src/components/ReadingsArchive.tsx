@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Calendar, BookOpen, Trash2, ShieldAlert } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { getLocalizedCardName } from '../data/tarotCards';
 import { Language, UI_COPY } from '../data/localization';
 import ViewportPortal from './ViewportPortal';
@@ -119,6 +120,7 @@ export default function ReadingsArchive({ onClose, language }: ReadingsArchivePr
                   {isExpanded && (
                     <div className="liquid-glass mt-4 border-t border-white/5 pt-4 text-left font-sans text-sm text-[#dfe2f3] whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto chat-scroll p-2 rounded-lg">
                       <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
                         components={{
                           h1: ({ node, ...props }) => (
                             <h2 className="font-serif text-[#a5e7ff] text-base font-bold pb-1 uppercase tracking-wider mt-3" {...props} />
@@ -126,7 +128,15 @@ export default function ReadingsArchive({ onClose, language }: ReadingsArchivePr
                           h2: ({ node, ...props }) => (
                             <h3 className="font-serif text-[#fface8] text-sm font-bold uppercase tracking-wide mt-2" {...props} />
                           ),
+                          h3: ({ node, ...props }) => <h4 className="font-sans text-[#ffdb40] text-xs font-semibold tracking-wide mt-2" {...props} />,
                           p: ({ node, ...props }) => <p className="font-sans text-[#dfe2f3] leading-relaxed text-xs my-1.5" {...props} />,
+                          strong: ({ node, ...props }) => <strong className="text-[#a5e7ff] font-bold" {...props} />,
+                          em: ({ node, ...props }) => <em className="text-[#fface8] italic" {...props} />,
+                          ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-1.5 space-y-1 marker:text-[#a5e7ff]" {...props} />,
+                          ol: ({ node, ...props }) => <ol className="list-decimal pl-5 my-1.5 space-y-1 marker:text-[#a5e7ff]" {...props} />,
+                          hr: ({ node, ...props }) => (
+                            <hr className="my-3 h-px border-0 bg-gradient-to-r from-transparent via-[#a5e7ff]/50 to-transparent" {...props} />
+                          ),
                         }}
                       >
                         {r.summary}
