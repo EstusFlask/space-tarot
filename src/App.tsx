@@ -16,6 +16,8 @@ import { DEFAULT_LANGUAGE, Language } from './data/localization';
 import { AISettings, readAISettings, saveAISettings } from './utils/aiSettings';
 import { AssetRefreshContext } from './utils/assetRefresh';
 import { buildReadingSnapshotFilename, downloadElementAsPng } from './utils/downloadSnapshot';
+import cardBackDayImage from '../images/card_back/card_back_day.png?url';
+import cardBackNightImage from '../images/card_back/card_back_night.png?url';
 
 interface DevDebugReading {
   spread: TarotSpread;
@@ -200,6 +202,17 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });
   }, [currentScreen]);
+
+  // Warm the card-back art (large PNGs) before the draw/reveal screens mount so the
+  // face-down cards never flash an empty slot — most visible as a white slot in light mode.
+  useEffect(() => {
+    [cardBackDayImage, cardBackNightImage].forEach(src => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = src;
+      void image.decode().catch(() => undefined);
+    });
+  }, []);
 
   useEffect(() => {
     drawnCards.forEach(({ card }) => {

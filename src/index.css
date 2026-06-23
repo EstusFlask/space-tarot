@@ -479,6 +479,13 @@
 }
 
 /* Base style resets */
+html {
+  /* Always reserve the viewport scrollbar gutter so moving between window-scrolled
+     screens (card wheel) and inner-scrolled screens (reveal/chat) never changes the
+     viewport width — otherwise centred content and the fixed header jump ~15px. */
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: "Inter", system-ui, -apple-system, sans-serif;
   background: var(--theme-background);
