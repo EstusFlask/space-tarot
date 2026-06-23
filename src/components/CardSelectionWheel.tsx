@@ -3,6 +3,7 @@ import { TarotCard, TarotSpread, TAROT_DECK } from '../data/tarotCards';
 import { DrawnCard } from '../types';
 import { Sparkles, PenTool, Check } from 'lucide-react';
 import { cryptoRandomBoolean, cryptoRandomInt, cryptoShuffle } from '../utils/cryptoRandom';
+import { haptics } from '../utils/haptics';
 import { Language, UI_COPY, getLocalizedSpread } from '../data/localization';
 import type { ThemeMode } from '../types';
 import cardBackDayImage from '../../images/card_back/card_back_day.png?url';
@@ -50,6 +51,8 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
   const [returningSlotIndexes, setReturningSlotIndexes] = useState<number[]>([]);
   const wheelAreaRef = useRef<HTMLDivElement | null>(null);
   const fanScrollRef = useRef<HTMLDivElement | null>(null);
+  const confirmAreaRef = useRef<HTMLDivElement | null>(null);
+  const lastTickScrollLeftRef = useRef(0);
   const questionInputRef = useRef<HTMLInputElement | null>(null);
   const wheelCardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const positionCardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -70,7 +73,9 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
   useEffect(() => {
     const scroller = fanScrollRef.current;
     if (!scroller) return;
-    scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
+    const center = (scroller.scrollWidth - scroller.clientWidth) / 2;
+    scroller.scrollLeft = center;
+    lastTickScrollLeftRef.current = center;
   }, [availableWheelWidth]);
 
   useEffect(() => {
@@ -106,6 +111,16 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
   const totalToDraw = spread.cardCount;
   const currentDrawIndex = drawn.length;
   const isSelectionComplete = drawn.length >= totalToDraw;
+
+  // Once the spread is fully drawn, glide the page down to the confirm button so the
+  // user doesn't have to hunt for it after the last card flies home.
+  useEffect(() => {
+    if (!isSelectionComplete) return;
+    const timeoutId = window.setTimeout(() => {
+      confirmAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 720); // let the final card-flight land first
+    return () => window.clearTimeout(timeoutId);
+  }, [isSelectionComplete]);
 
   const getWheelCardRotation = (slotIndex: number) => {
     // Constant angular step about a shared pivot below the fan — the card's tilt is
@@ -216,6 +231,8 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
       ));
     }
 
+    haptics.remove();
+
     setDrawn(prev => prev.filter(item => item.slotIndex !== selection.slotIndex));
   };
 
@@ -237,6 +254,13 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
       true,
     );
 
+    const willComplete = drawn.length + 1 >= totalToDraw;
+    if (willComplete) {
+      haptics.complete();
+    } else {
+      haptics.select();
+    }
+
     setDrawn([
       ...drawn,
       {
@@ -255,6 +279,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
 
       if (armedSlotIndex !== slotIndex) {
         setArmedSlotIndex(slotIndex);
+        haptics.select();
         return;
       }
     }
@@ -292,7 +317,8 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
   // constant angular step, so the spread splays open like a real fan (this is what
   // made the original wheel feel "fan-like"). Spacing is a comfortable fraction of a
   // card so each one stays tappable; the fan is wider than the viewport and lives in a
-  // horizontal scroller (swipe on mobile, no page scroll), auto-centred on load.
+  // horizontal scroller (swipe left/right on mobile; vertical swipes still scroll the
+  // page), auto-centred on load.
   const isCompact = availableWheelWidth < 560;
   const cardHeight = isCompact ? 92 : 108;
   const cardWidth = Math.round(cardHeight * (2 / 3));
@@ -446,8 +472,17 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
 
         <div
           ref={fanScrollRef}
-          className="fan-scroll absolute inset-0 overflow-x-auto overflow-y-hidden flex items-end justify-center"
-          style={{ touchAction: 'pan-x' }}
+          className="fan-scroll absolute inset-0 overflow-x-auto overflow-y-hidden flex items-end"
+          style={{ touchAction: 'pan-x pan-y', justifyContent: 'safe center' }}
+          onScroll={(event) => {
+            // Emit a faint haptic "tick" each time the fan scrolls past roughly one
+            // card of travel, giving the swipe a notch-by-notch, ratcheting feel.
+            const scrollLeft = event.currentTarget.scrollLeft;
+            if (Math.abs(scrollLeft - lastTickScrollLeftRef.current) >= centerStep) {
+              lastTickScrollLeftRef.current = scrollLeft;
+              haptics.tick();
+            }
+          }}
         >
           {/* Fanned card spread. Cards are offset down by FAN_LIFT_HEADROOM so a lifted center card never clips the top. */}
           <div
@@ -552,7 +587,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
       ))}
 
       {/* Confirmation Actions - Pushed down with extra mt and bottom padding to avoid any overlap */}
-      <div className="relative z-30 mt-10 pb-12 w-full px-4 flex justify-center">
+      <div ref={confirmAreaRef} className="relative z-30 mt-10 pb-12 w-full px-4 flex justify-center">
         {isSelectionComplete ? (
           <button
             onClick={handleConfirm}
