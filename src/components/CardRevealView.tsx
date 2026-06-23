@@ -3,7 +3,9 @@ import { DrawnCard } from '../types';
 import { getLocalizedCardName, getTarotImageByName, TarotSpread } from '../data/tarotCards';
 import { Sparkles, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
-import cardBackImage from '../generated/card_backs/card_back_6.webp?url';
+import type { ThemeMode } from '../types';
+import cardBackDayImage from '../../images/card_back/card_back_day.png?url';
+import cardBackNightImage from '../../images/card_back/card_back_night.png?url';
 import QuestionPromptDialog from './QuestionPromptDialog';
 import RetryingImage from './RetryingImage';
 import ViewportPortal from './ViewportPortal';
@@ -23,6 +25,7 @@ interface CardRevealViewProps {
   initialAllRevealed: boolean;
   hasExistingOracleSession: boolean;
   onReturnToChat: () => void;
+  resolvedTheme: Exclude<ThemeMode, 'system'>;
 }
 
 export default function CardRevealView({
@@ -37,6 +40,7 @@ export default function CardRevealView({
   initialAllRevealed,
   hasExistingOracleSession,
   onReturnToChat,
+  resolvedTheme,
 }: CardRevealViewProps) {
   const [flipped, setFlipped] = useState<number[]>(() => (
     initialAllRevealed ? drawnCards.map((_, index) => index) : []
@@ -48,6 +52,7 @@ export default function CardRevealView({
   const copy = UI_COPY[language].cardReveal;
   const localizedSpread = getLocalizedSpread(spread, language);
   const commonCopy = UI_COPY[language].common;
+  const cardBackImage = resolvedTheme === 'light' ? cardBackDayImage : cardBackNightImage;
 
   const localizeKeyword = (keyword: string, cardName: string) => {
     if (keyword === cardName) {
@@ -200,6 +205,7 @@ export default function CardRevealView({
             onClick={() => handleCardClick(0)}
             themeClass={getThemeClass(drawnCards[0].card.colorTheme)}
             language={language}
+            cardBackImage={cardBackImage}
           />
         </div>
       )}
@@ -217,6 +223,7 @@ export default function CardRevealView({
                 onClick={() => handleCardClick(index)}
                 themeClass={getThemeClass(dc.card.colorTheme)}
                 language={language}
+                cardBackImage={cardBackImage}
               />
             </div>
           ))}
@@ -242,6 +249,7 @@ export default function CardRevealView({
                 themeClass={getThemeClass(drawnCards[0].card.colorTheme)}
                 compact
                 language={language}
+                cardBackImage={cardBackImage}
               />
               <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans tracking-tight">
                 {getCompactPositionLabel(0)}
@@ -261,6 +269,7 @@ export default function CardRevealView({
                 themeClass={getThemeClass(drawnCards[1].card.colorTheme)}
                 compact
                 language={language}
+                cardBackImage={cardBackImage}
               />
               <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans tracking-tight -rotate-90">
                 {getCompactPositionLabel(1)}
@@ -276,6 +285,7 @@ export default function CardRevealView({
                 themeClass={getThemeClass(drawnCards[2].card.colorTheme)}
                 compact
                 language={language}
+                cardBackImage={cardBackImage}
               />
               <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans tracking-tight">
                 {getCompactPositionLabel(2)}
@@ -291,6 +301,7 @@ export default function CardRevealView({
                 themeClass={getThemeClass(drawnCards[3].card.colorTheme)}
                 compact
                 language={language}
+                cardBackImage={cardBackImage}
               />
               <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans tracking-tight">
                 {getCompactPositionLabel(3)}
@@ -306,6 +317,7 @@ export default function CardRevealView({
                 themeClass={getThemeClass(drawnCards[4].card.colorTheme)}
                 compact
                 language={language}
+                cardBackImage={cardBackImage}
               />
               <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans tracking-tight">
                 {getCompactPositionLabel(4)}
@@ -321,6 +333,7 @@ export default function CardRevealView({
                 themeClass={getThemeClass(drawnCards[5].card.colorTheme)}
                 compact
                 language={language}
+                cardBackImage={cardBackImage}
               />
               <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans tracking-tight">
                 {getCompactPositionLabel(5)}
@@ -341,6 +354,7 @@ export default function CardRevealView({
                     themeClass={getThemeClass(dc.card.colorTheme)}
                     compact
                     language={language}
+                    cardBackImage={cardBackImage}
                   />
                   <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] text-gray-500 font-sans font-bold whitespace-nowrap">
                     {getCompactPositionLabel(idx)}
@@ -500,6 +514,7 @@ interface TarotCardFlipItemProps {
   themeClass: string;
   compact?: boolean;
   language: Language;
+  cardBackImage: string;
 }
 
 function TarotCardFlipItem({
@@ -509,6 +524,7 @@ function TarotCardFlipItem({
   themeClass,
   compact = false,
   language,
+  cardBackImage,
 }: TarotCardFlipItemProps) {
   const cardImage = getTarotImageByName(dc.card.name);
   const arcanaLabel = getLocalizedArcanaLabel(dc.card, language);

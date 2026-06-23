@@ -4,7 +4,9 @@ import { DrawnCard } from '../types';
 import { Sparkles, PenTool, Check } from 'lucide-react';
 import { cryptoRandomBoolean, cryptoRandomInt, cryptoShuffle } from '../utils/cryptoRandom';
 import { Language, UI_COPY, getLocalizedSpread } from '../data/localization';
-import cardBackImage from '../generated/card_backs/card_back_6.webp?url';
+import type { ThemeMode } from '../types';
+import cardBackDayImage from '../../images/card_back/card_back_day.png?url';
+import cardBackNightImage from '../../images/card_back/card_back_night.png?url';
 import RetryingImage from './RetryingImage';
 
 const TOTAL_CARDS_IN_WHEEL = 78;
@@ -13,6 +15,7 @@ interface CardSelectionWheelProps {
   spread: TarotSpread;
   onCardsSelected: (drawnCards: DrawnCard[], question: string) => void;
   language: Language;
+  resolvedTheme: Exclude<ThemeMode, 'system'>;
 }
 
 interface DrawSelection {
@@ -27,7 +30,7 @@ interface CardFlight {
   style: CSSProperties;
 }
 
-export default function CardSelectionWheel({ spread, onCardsSelected, language }: CardSelectionWheelProps) {
+export default function CardSelectionWheel({ spread, onCardsSelected, language, resolvedTheme }: CardSelectionWheelProps) {
   const [drawn, setDrawn] = useState<DrawSelection[]>([]);
   const [armedSlotIndex, setArmedSlotIndex] = useState<number | null>(null);
   const [question, setQuestion] = useState('');
@@ -47,6 +50,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language }
   const localizedSpread = getLocalizedSpread(spread, language);
   const positionSlots = localizedSpread.positions;
   const wheelSlotIndexes = useMemo(() => Array.from({ length: TOTAL_CARDS_IN_WHEEL }, (_, i) => i), []);
+  const cardBackImage = resolvedTheme === 'light' ? cardBackDayImage : cardBackNightImage;
 
   useEffect(() => {
     setDeck(cryptoShuffle(TAROT_DECK));

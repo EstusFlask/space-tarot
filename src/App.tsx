@@ -311,6 +311,7 @@ export default function App() {
       await downloadElementAsPng(
         snapshotRef.current,
         buildReadingSnapshotFilename(selectedSpread.name),
+        resolvedTheme === 'light' ? '#eef3f1' : '#0f131f',
       );
       return true;
     } catch (err) {
@@ -333,6 +334,7 @@ export default function App() {
             spread={selectedSpread}
             onCardsSelected={handleCardsSelected}
             language={language}
+            resolvedTheme={resolvedTheme}
           />
         ) : null;
 
@@ -350,6 +352,7 @@ export default function App() {
             initialAllRevealed={allCardsRevealed}
             hasExistingOracleSession={chatMessages.length > 0 && Boolean(preloadedAIAnalysis)}
             onReturnToChat={() => setCurrentScreen('chat')}
+            resolvedTheme={resolvedTheme}
           />
         ) : null;
 
@@ -418,6 +421,7 @@ export default function App() {
             question={question}
             messages={currentScreen === 'chat' ? chatMessages : []}
             language={language}
+            resolvedTheme={resolvedTheme}
           />
         </div>
       )}

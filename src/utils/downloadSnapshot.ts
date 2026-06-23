@@ -180,12 +180,12 @@ export function buildReadingSnapshotFilename(name: string) {
   return `space-tarot-${safe || 'reading'}-${stamp}.png`
 }
 
-export async function downloadElementAsPng(element: HTMLElement, filename: string) {
+export async function downloadElementAsPng(element: HTMLElement, filename: string, backgroundColor = '#0f131f') {
   const { clone, unmount } = await prepare(element)
 
   try {
     const dataUrl = await toPng(clone, {
-      backgroundColor: '#0f131f',
+      backgroundColor,
       pixelRatio: 2,
       skipFonts: true,
       cacheBust: false
