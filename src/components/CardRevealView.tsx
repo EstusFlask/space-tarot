@@ -52,7 +52,6 @@ export default function CardRevealView({
   const [aiError, setAiError] = useState<string | null>(null);
   const [showQuestionPrompt, setShowQuestionPrompt] = useState(false);
   const meaningPanelRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const copy = UI_COPY[language].cardReveal;
   const localizedSpread = getLocalizedSpread(spread, language);
   const commonCopy = UI_COPY[language].common;
@@ -60,7 +59,7 @@ export default function CardRevealView({
 
   const closeMeaningPanel = () => {
     setIsClosingMeaning(true);
-    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCardClick = (index: number) => {
@@ -183,9 +182,7 @@ export default function CardRevealView({
 
   return (
     <div
-      ref={scrollContainerRef}
-      className="w-full flex flex-col items-center h-screen overflow-y-auto chat-scroll pt-24 md:pt-32 text-center pb-16"
-      style={{ scrollbarGutter: 'stable both-edges' }}
+      className="w-full flex flex-col items-center min-h-[calc(100vh-80px)] overflow-x-visible overflow-y-visible pt-24 md:pt-32 text-center pb-16"
     >
       {/* Upper info panel + actions, framed in liquid glass */}
       <div className="w-full px-4 mb-8 shrink-0">

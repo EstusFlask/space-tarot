@@ -4,6 +4,9 @@ const STABLE_FRAME_COUNT = 3
 const INLINE_IMAGE_MIME_TYPE = 'image/png'
 const HTML_NAMESPACE = 'http://www.w3.org/1999/xhtml'
 const IMAGE_RESOURCE_ATTRIBUTES = new Set(['src', 'srcset', 'sizes'])
+const SHADOW_CLASS_PATTERN = /^shadow(?:$|-|\[)/
+const LIGHT_IOS_SNAPSHOT_SHADOW = 'inset 0 0 0 1px rgba(255, 255, 255, 0.48), 0 0 0 1px rgba(16, 32, 58, 0.06)'
+const DARK_IOS_SNAPSHOT_SHADOW = 'inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1px rgba(3, 7, 18, 0.18)'
 
 function waitFrame() {
   return new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
@@ -130,6 +133,49 @@ function inlineImages(src: HTMLElement, clone: HTMLElement) {
   })
 }
 
+function isIOSWebKit() {
+  const ua = navigator.userAgent
+  const isIOS =
+    /iP(ad|hone|od)/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+
+  return isIOS && /AppleWebKit/.test(ua)
+}
+
+function isLightSnapshot(root: HTMLElement) {
+  return root.className.includes('text-[#10203a]') || root.style.backgroundColor === 'rgb(238, 243, 241)' || root.style.backgroundColor === '#eef3f1'
+}
+
+function removeShadowClasses(el: HTMLElement) {
+  const className = el.getAttribute('class')
+  if (!className) return false
+
+  const nextClassName = className
+    .split(/\s+/)
+    .filter(token => !SHADOW_CLASS_PATTERN.test(token))
+    .join(' ')
+
+  if (nextClassName === className) return false
+
+  el.setAttribute('class', nextClassName)
+  return true
+}
+
+function stabilizeIOSWebKitSnapshotShadows(root: HTMLElement) {
+  const fallbackShadow = isLightSnapshot(root) ? LIGHT_IOS_SNAPSHOT_SHADOW : DARK_IOS_SNAPSHOT_SHADOW
+  const nodes = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))]
+
+  for (const el of nodes) {
+    const hadInlineShadow = Boolean(el.style.boxShadow)
+    const hadShadowClass = removeShadowClasses(el)
+
+    if (hadInlineShadow || hadShadowClass) {
+      // iOS WebKit can rasterize large html-to-image box shadows as clipped blocks.
+      el.style.boxShadow = fallbackShadow
+    }
+  }
+}
+
 function assertNoExternal(root: HTMLElement) {
   const bad = Array.from(root.querySelectorAll('img')).find(img => {
     const src = img.getAttribute('src')
@@ -142,12 +188,16 @@ function assertNoExternal(root: HTMLElement) {
 function mount(clone: HTMLElement) {
   const host = document.createElement('div')
   host.style.position = 'fixed'
-  host.style.left = '-10000px'
+  host.style.left = '0'
   host.style.top = '0'
   host.style.pointerEvents = 'none'
   host.setAttribute('aria-hidden', 'true')
   host.appendChild(clone)
   document.body.appendChild(host)
+
+  const width = Math.ceil(clone.getBoundingClientRect().width || clone.scrollWidth || window.innerWidth)
+  host.style.left = `-${width + 64}px`
+
   return () => host.remove()
 }
 
@@ -158,6 +208,7 @@ async function prepare(element: HTMLElement) {
 
   const clone = cloneNode(element) as HTMLElement
   inlineImages(element, clone)
+  if (isIOSWebKit()) stabilizeIOSWebKitSnapshotShadows(clone)
 
   const unmount = mount(clone)
 

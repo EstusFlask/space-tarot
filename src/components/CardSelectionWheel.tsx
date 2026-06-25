@@ -332,7 +332,7 @@ export default function CardSelectionWheel({ spread, onCardsSelected, language, 
   const centerCounterSize = isCompact ? 88 : 112;
 
   return (
-    <div className="w-full flex flex-col items-center justify-start min-h-[calc(100vh-80px)] pt-20 pb-20 text-center relative overflow-hidden">
+    <div className="w-full flex flex-col items-center justify-start min-h-[calc(100vh-80px)] pt-20 pb-20 text-center relative overflow-x-visible overflow-y-clip">
       {/* Top Right Floating Interactive Drawn Tapestry Control Panel */}
       <div className="liquid-glass liquid-glass-card md:absolute md:top-20 md:right-6 md:mt-0 mb-6 md:mb-0 w-full md:w-[220px] max-w-sm px-4 z-40 border border-white/10 p-3.5 rounded-2xl flex flex-col items-start gap-1.5 transition-all text-left">
         <span className="text-[10px] font-sans font-extrabold tracking-widest text-[#a5e7ff] uppercase block mb-1">
