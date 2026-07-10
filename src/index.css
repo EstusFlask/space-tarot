@@ -150,6 +150,10 @@
 }
 
 .liquid-glass-bar {
+  /* Chromium treats `isolation: isolate` as a backdrop boundary, so a fixed
+     header cannot sample and blur page content scrolling behind it. The fixed
+     header already creates a stacking context via its z-index. */
+  isolation: auto;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.025)),
     rgba(10, 15, 26, 0.42);

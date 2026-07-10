@@ -37,14 +37,14 @@ function isThemeMode(value: string | null): value is ThemeMode {
 
 function readThemeMode(): ThemeMode {
   if (typeof window === 'undefined') {
-    return 'dark';
+    return 'system';
   }
 
   try {
     const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return isThemeMode(storedTheme) ? storedTheme : 'dark';
+    return isThemeMode(storedTheme) ? storedTheme : 'system';
   } catch {
-    return 'dark';
+    return 'system';
   }
 }
 
