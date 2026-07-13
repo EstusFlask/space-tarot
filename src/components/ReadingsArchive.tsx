@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Calendar, BookOpen, Trash2, ShieldAlert } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { AI_MARKDOWN_REMARK_PLUGINS, prepareAIMessageMarkdown } from '../utils/aiMarkdown';
 import { getLocalizedCardName } from '../data/tarotCards';
 import { Language, UI_COPY } from '../data/localization';
 import ViewportPortal from './ViewportPortal';
@@ -120,7 +120,7 @@ export default function ReadingsArchive({ onClose, language }: ReadingsArchivePr
                   {isExpanded && (
                     <div className="liquid-glass mt-4 border-t border-white/5 pt-4 text-left font-sans text-sm text-[#dfe2f3] whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto chat-scroll p-2 rounded-lg">
                       <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
+                        remarkPlugins={AI_MARKDOWN_REMARK_PLUGINS}
                         components={{
                           h1: ({ node, ...props }) => (
                             <h2 className="font-serif text-[#a5e7ff] text-base font-bold pb-1 uppercase tracking-wider mt-3" {...props} />
@@ -139,7 +139,7 @@ export default function ReadingsArchive({ onClose, language }: ReadingsArchivePr
                           ),
                         }}
                       >
-                        {r.summary}
+                        {prepareAIMessageMarkdown(r.summary)}
                       </ReactMarkdown>
                     </div>
                   )}

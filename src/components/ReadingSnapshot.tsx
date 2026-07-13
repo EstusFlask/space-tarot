@@ -1,6 +1,6 @@
 import { forwardRef, type CSSProperties } from 'react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { AI_MARKDOWN_REMARK_PLUGINS, prepareAIMessageMarkdown } from '../utils/aiMarkdown';
 import { ChatMessage, DrawnCard, ThemeMode } from '../types';
 import { getLocalizedCardName, getTarotSnapshotImageByName, TarotSpread } from '../data/tarotCards';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
@@ -248,7 +248,7 @@ const ReadingSnapshot = forwardRef<HTMLDivElement, ReadingSnapshotProps>(functio
                     </div>
                     <div className={`text-sm leading-7 ${theme.bodyClassName}`}>
                       <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
+                        remarkPlugins={AI_MARKDOWN_REMARK_PLUGINS}
                         components={{
                           h1: ({ node, ...props }) => <h3 className={`font-serif text-xl mt-4 mb-2 ${theme.accentClassName}`} {...props} />,
                           h2: ({ node, ...props }) => <h4 className={`font-serif text-lg mt-4 mb-2 ${theme.pinkClassName}`} {...props} />,
@@ -263,7 +263,7 @@ const ReadingSnapshot = forwardRef<HTMLDivElement, ReadingSnapshotProps>(functio
                           em: ({ node, ...props }) => <em className={theme.pinkClassName} {...props} />,
                         }}
                       >
-                        {message.text}
+                        {prepareAIMessageMarkdown(message.text)}
                       </ReactMarkdown>
                     </div>
                   </article>

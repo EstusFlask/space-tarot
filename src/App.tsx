@@ -126,6 +126,8 @@ function getDevDebugReading(): DevDebugReading | null {
     '',
     '这是 dev 模式直接进入 AI 解析页的本地调试内容，用来检查聊天框、放牌框、滚动区和输入区的视觉状态。',
     '',
+    'Markdown 边界回归：前文**"abc"**后文、中文**「abc」**继续、嵌入**“弯引号”**正文。',
+    '',
     '如果需要指定牌阵或牌，可以使用 `spread=threecard` 和 `cards=The Fool,The Star,Temperance`。',
   ].join('\n');
   const messages: ChatMessage[] = [

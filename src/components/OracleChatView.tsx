@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, DrawnCard } from '../types';
 import { getLocalizedCardName, getTarotImageByName, TarotSpread } from '../data/tarotCards';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Send, Sparkles, Download, CheckCircle, RefreshCw, ArrowLeft, RotateCcw } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
 import type { AISettings } from '../utils/aiSettings';
@@ -10,6 +9,7 @@ import { hasAIKey } from '../utils/aiSettings';
 import { getTarotFallbackText, requestTarotInterpretation } from '../utils/glmClient';
 import ViewportPortal from './ViewportPortal';
 import RetryingImage from './RetryingImage';
+import { AI_MARKDOWN_REMARK_PLUGINS, prepareAIMessageMarkdown } from '../utils/aiMarkdown';
 
 interface OracleChatViewProps {
   spread: TarotSpread;
@@ -365,7 +365,7 @@ export default function OracleChatView({
                 <div className={`markdown-body select-text relative z-20 break-words ${isAi ? 'space-y-3' : 'whitespace-pre-wrap'}`}>
                   {isAi ? (
                     <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
+                      remarkPlugins={AI_MARKDOWN_REMARK_PLUGINS}
                       components={{
                         h1: ({ node, ...props }) => (
                           <h2
@@ -407,7 +407,7 @@ export default function OracleChatView({
                         em: ({ node, ...props }) => <em className="text-[#fface8] italic" {...props} />,
                       }}
                     >
-                      {msg.text}
+                      {prepareAIMessageMarkdown(msg.text)}
                     </ReactMarkdown>
                   ) : (
                     msg.text
