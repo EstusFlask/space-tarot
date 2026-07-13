@@ -11,11 +11,19 @@ import AISettingsDialog from './components/AISettingsDialog';
 import GitHubSupportDialog from './components/GitHubSupportDialog';
 import ConfirmHomeDialog from './components/ConfirmHomeDialog';
 import { TarotScreen, DrawnCard, ChatMessage, ThemeMode } from './types';
-import { getTarotImageByName, TAROT_DECK, TAROT_SPREADS, TarotSpread } from './data/tarotCards';
-import { DEFAULT_LANGUAGE, Language } from './data/localization';
+import {
+  getLocalizedCardName,
+  getTarotImageByName,
+  TAROT_DECK,
+  TAROT_SPREADS,
+  TarotSpread,
+} from './data/tarotCards';
+import { DEFAULT_LANGUAGE, getLocalizedArcanaLabel, getLocalizedSpread, Language, UI_COPY } from './data/localization';
 import { AISettings, readAISettings, saveAISettings } from './utils/aiSettings';
 import { AssetRefreshContext } from './utils/assetRefresh';
 import { buildReadingSnapshotFilename, downloadElementAsPng } from './utils/downloadSnapshot';
+import { getTarotFallbackText, streamTarotInterpretation } from './utils/glmClient';
+import { localizeKeyword } from './utils/keywords';
 import cardBackDayImage from '../images/card_back/card_back_day.png?url';
 import cardBackNightImage from '../images/card_back/card_back_night.png?url';
 
@@ -23,8 +31,8 @@ interface DevDebugReading {
   spread: TarotSpread;
   drawnCards: DrawnCard[];
   question: string;
-  analysis: string;
   messages: ChatMessage[];
+  activeMessageId: string | null;
 }
 
 type ResolvedTheme = Exclude<ThemeMode, 'system'>;
@@ -121,6 +129,7 @@ function getDevDebugReading(): DevDebugReading | null {
   });
 
   const question = params.get('q')?.trim() || '调试模式：我现在最需要看清什么？';
+  const debugState = params.get('state');
   const analysis = [
     '## 调试模式占位解读',
     '',
@@ -130,16 +139,25 @@ function getDevDebugReading(): DevDebugReading | null {
     '',
     '如果需要指定牌阵或牌，可以使用 `spread=threecard` 和 `cards=The Fool,The Star,Temperance`。',
   ].join('\n');
+  const messageId = 'debug-oracle';
+  const isStreamingDebug = debugState === 'streaming';
+  const isErrorDebug = debugState === 'error';
   const messages: ChatMessage[] = [
     {
-      id: 'debug-oracle',
+      id: messageId,
       role: 'ai',
-      text: analysis,
+      text: isErrorDebug
+        ? UI_COPY.zh.oracleChat.errorText
+        : isStreamingDebug
+          ? `${analysis}\n\n正在接收来自星界的后续讯息……`
+          : analysis,
       timestamp: 'Debug',
+      status: isErrorDebug ? 'error' : isStreamingDebug ? 'streaming' : 'complete',
+      retryText: isErrorDebug ? question : undefined,
     },
   ];
 
-  return { spread, drawnCards, question, analysis, messages };
+  return { spread, drawnCards, question, messages, activeMessageId: isStreamingDebug ? messageId : null };
 }
 
 export default function App() {
@@ -148,9 +166,9 @@ export default function App() {
   const [selectedSpread, setSelectedSpread] = useState<TarotSpread | null>(debugReading?.spread ?? null);
   const [drawnCards, setDrawnCards] = useState<DrawnCard[]>(debugReading?.drawnCards ?? []);
   const [question, setQuestion] = useState(debugReading?.question ?? '');
-  const [preloadedAIAnalysis, setPreloadedAIAnalysis] = useState(debugReading?.analysis ?? '');
   const [allCardsRevealed, setAllCardsRevealed] = useState(Boolean(debugReading));
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(debugReading?.messages ?? []);
+  const [activeAIMessageId, setActiveAIMessageId] = useState<string | null>(debugReading?.activeMessageId ?? null);
   const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
   const [showAISettings, setShowAISettings] = useState(false);
   const [showGitHubSupport, setShowGitHubSupport] = useState(false);
@@ -160,6 +178,7 @@ export default function App() {
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => readThemeMode());
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
   const snapshotRef = useRef<HTMLDivElement | null>(null);
+  const activeAIRequestRef = useRef<{ token: symbol; controller: AbortController } | null>(null);
   const [language, setLanguage] = useState<Language>(() => {
     try {
       const storedLanguage = localStorage.getItem('tarot-language');
@@ -228,36 +247,228 @@ export default function App() {
     });
   }, [drawnCards]);
 
+  useEffect(() => () => activeAIRequestRef.current?.controller.abort(), []);
+
+  const cancelActiveAIRequest = () => {
+    activeAIRequestRef.current?.controller.abort();
+    activeAIRequestRef.current = null;
+    setActiveAIMessageId(null);
+  };
+
+  const getTimestamp = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const updateAIMessage = (messageId: string, update: Partial<ChatMessage>) => {
+    setChatMessages(current =>
+      current.map(message => (message.id === messageId ? { ...message, ...update } : message)),
+    );
+  };
+
+  const streamAIMessage = async (
+    textToSend: string,
+    historyMessages: ChatMessage[],
+    messageId: string,
+    isInitialConsultation: boolean,
+  ) => {
+    if (!selectedSpread || activeAIRequestRef.current) return;
+
+    const requestToken = Symbol(messageId);
+    const controller = new AbortController();
+    const localizedSpread = getLocalizedSpread(selectedSpread, language);
+    let enteredChat = currentScreen === 'chat';
+    let latestText = '';
+    let frameId: number | null = null;
+
+    const flushText = () => {
+      frameId = null;
+      if (activeAIRequestRef.current?.token !== requestToken) return;
+      updateAIMessage(messageId, { text: latestText, status: 'streaming' });
+    };
+
+    activeAIRequestRef.current = { token: requestToken, controller };
+    setActiveAIMessageId(messageId);
+
+    try {
+      const interpretation = await streamTarotInterpretation(
+        {
+          settings: aiSettings,
+          spreadName: localizedSpread.name,
+          question: textToSend,
+          language,
+          cardsDrawn: drawnCards.map(dc => ({
+            name: dc.card.name,
+            displayName: getLocalizedCardName(dc.card.name, language),
+            positionName: localizedSpread.positions[dc.positionIndex]?.name ?? dc.positionName,
+            positionDesc: localizedSpread.positions[dc.positionIndex]?.description ?? dc.positionDesc,
+            isUpright: dc.isUpright,
+            keywords: (dc.isUpright ? dc.card.uprightKeywords : dc.card.reversedKeywords).map(keyword =>
+              localizeKeyword(keyword, dc.card.name, language),
+            ),
+            arcana: getLocalizedArcanaLabel(dc.card, language),
+            description: dc.card.description,
+          })),
+          history: historyMessages
+            .filter(message => message.status !== 'error' && message.status !== 'streaming' && !message.isFallback)
+            .map(message => ({ role: message.role, text: message.text })),
+        },
+        {
+          signal: controller.signal,
+          onDelta: (_delta, fullText) => {
+            if (activeAIRequestRef.current?.token !== requestToken) return;
+            latestText = fullText;
+
+            if (!enteredChat) {
+              enteredChat = true;
+              updateAIMessage(messageId, { text: fullText, status: 'streaming' });
+              setCurrentScreen('chat');
+              return;
+            }
+
+            if (frameId === null) {
+              frameId = window.requestAnimationFrame(flushText);
+            }
+          },
+        },
+      );
+
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+        frameId = null;
+      }
+
+      if (activeAIRequestRef.current?.token !== requestToken) return;
+
+      const fallbackText = getTarotFallbackText(language);
+      const isFallback = interpretation === fallbackText;
+      updateAIMessage(messageId, {
+        text: interpretation,
+        timestamp: getTimestamp(),
+        status: 'complete',
+        isFallback,
+        retryText: isFallback ? textToSend : undefined,
+      });
+
+      if (!enteredChat && isInitialConsultation) {
+        setCurrentScreen('chat');
+      }
+    } catch (error) {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+
+      if (controller.signal.aborted || activeAIRequestRef.current?.token !== requestToken) return;
+
+      console.error('Error in Oracle consultation:', error);
+      updateAIMessage(messageId, {
+        text: UI_COPY[language].oracleChat.errorText,
+        timestamp: getTimestamp(),
+        status: 'error',
+        isFallback: false,
+        retryText: textToSend,
+      });
+
+      if (!enteredChat && isInitialConsultation) {
+        setCurrentScreen('chat');
+      }
+    } finally {
+      if (activeAIRequestRef.current?.token === requestToken) {
+        activeAIRequestRef.current = null;
+        setActiveAIMessageId(null);
+      }
+    }
+  };
+
   const handleSelectSpread = (spread: TarotSpread) => {
     setSelectedSpread(spread);
     setCurrentScreen('choose_cards');
   };
 
   const handleCardsSelected = (drawn: DrawnCard[], userQuestion: string) => {
+    cancelActiveAIRequest();
     setDrawnCards(drawn);
     setQuestion(userQuestion);
     setAllCardsRevealed(false);
     setChatMessages([]);
-    setPreloadedAIAnalysis('');
     setCurrentScreen('reveal');
   };
 
-  const handleProceedToChat = (analysis: string, nextQuestion?: string) => {
-    if (nextQuestion !== undefined) {
-      setQuestion(nextQuestion);
-    }
+  const handleStartInitialConsultation = (focusQuestion: string) => {
+    if (activeAIRequestRef.current) return;
 
-    setPreloadedAIAnalysis(analysis);
+    const messageId = `ai-initial-${Date.now()}`;
+    setQuestion(focusQuestion);
     setAllCardsRevealed(true);
     setChatMessages([
       {
-        id: 'init-oracle',
+        id: messageId,
         role: 'ai',
-        text: analysis,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: '',
+        timestamp: getTimestamp(),
+        status: 'streaming',
+        retryText: focusQuestion,
       },
     ]);
-    setCurrentScreen('chat');
+    void streamAIMessage(focusQuestion, [], messageId, true);
+  };
+
+  const handleSendChatMessage = (rawText: string) => {
+    const textToSend = rawText.trim();
+    if (!textToSend || activeAIRequestRef.current) return false;
+
+    if (!aiSettings.apiKey.trim()) {
+      setShowAISettings(true);
+      return false;
+    }
+
+    const historyMessages = chatMessages;
+    const timestamp = getTimestamp();
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      text: textToSend,
+      timestamp,
+      status: 'complete',
+    };
+    const aiMessageId = `ai-${Date.now()}`;
+    const aiMessage: ChatMessage = {
+      id: aiMessageId,
+      role: 'ai',
+      text: '',
+      timestamp,
+      status: 'streaming',
+      retryText: textToSend,
+    };
+
+    setChatMessages(current => [...current, userMessage, aiMessage]);
+    void streamAIMessage(textToSend, historyMessages, aiMessageId, false);
+    return true;
+  };
+
+  const handleRetryChatMessage = (messageId: string) => {
+    if (activeAIRequestRef.current) return;
+
+    const messageIndex = chatMessages.findIndex(message => message.id === messageId);
+    const message = chatMessages[messageIndex];
+    if (messageIndex === -1 || typeof message?.retryText !== 'string') return;
+
+    if (!aiSettings.apiKey.trim()) {
+      setShowAISettings(true);
+      return;
+    }
+
+    const retryHistory = chatMessages.slice(0, messageIndex);
+    const previousMessage = retryHistory[retryHistory.length - 1];
+    const historyMessages =
+      previousMessage?.role === 'user' && previousMessage.text === message.retryText
+        ? retryHistory.slice(0, -1)
+        : retryHistory;
+
+    updateAIMessage(messageId, {
+      text: '',
+      timestamp: getTimestamp(),
+      status: 'streaming',
+      isFallback: false,
+    });
+    void streamAIMessage(message.retryText, historyMessages, messageId, false);
   };
 
   const handleSaveAISettings = (nextSettings: AISettings) => {
@@ -271,10 +482,10 @@ export default function App() {
   };
 
   const resetReadingToHome = () => {
+    cancelActiveAIRequest();
     setSelectedSpread(null);
     setDrawnCards([]);
     setQuestion('');
-    setPreloadedAIAnalysis('');
     setAllCardsRevealed(false);
     setChatMessages([]);
     setCurrentScreen('spread_selection');
@@ -295,6 +506,7 @@ export default function App() {
   };
 
   const handleReturnToSpread = () => {
+    if (activeAIRequestRef.current) return;
     setAllCardsRevealed(true);
     setCurrentScreen('reveal');
   };
@@ -312,7 +524,7 @@ export default function App() {
   };
 
   const canSaveReading = Boolean(
-    selectedSpread && drawnCards.length > 0 && (currentScreen === 'chat' || allCardsRevealed),
+    selectedSpread && drawnCards.length > 0 && !activeAIMessageId && (currentScreen === 'chat' || allCardsRevealed),
   );
 
   const handleSaveReadingSnapshot = async () => {
@@ -359,13 +571,14 @@ export default function App() {
             spread={selectedSpread}
             drawnCards={drawnCards}
             question={question}
-            onProceedToChat={handleProceedToChat}
+            onConsultOracle={handleStartInitialConsultation}
+            isAiLoading={Boolean(activeAIMessageId)}
             language={language}
             aiSettings={aiSettings}
             onOpenAISettings={() => setShowAISettings(true)}
             onRevealStatusChange={setAllCardsRevealed}
             initialAllRevealed={allCardsRevealed}
-            hasExistingOracleSession={chatMessages.length > 0 && Boolean(preloadedAIAnalysis)}
+            hasExistingOracleSession={chatMessages.length > 0}
             onReturnToChat={() => setCurrentScreen('chat')}
             resolvedTheme={resolvedTheme}
           />
@@ -376,14 +589,14 @@ export default function App() {
           <OracleChatView
             spread={selectedSpread}
             drawnCards={drawnCards}
-            initialAnalysis={preloadedAIAnalysis}
             question={question}
             onReset={handleNavigateHome}
             language={language}
-            aiSettings={aiSettings}
-            onOpenAISettings={() => setShowAISettings(true)}
-            storedMessages={chatMessages}
-            onMessagesChange={setChatMessages}
+            messages={chatMessages}
+            isLoading={Boolean(activeAIMessageId)}
+            activeMessageId={activeAIMessageId}
+            onSendMessage={handleSendChatMessage}
+            onRetryMessage={handleRetryChatMessage}
             onSaveReading={handleSaveReadingSnapshot}
             isSavingReading={isSavingSnapshot}
             onReturnToSpread={handleReturnToSpread}

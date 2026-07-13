@@ -29,6 +29,11 @@ export interface TarotAIRequest {
   history?: TarotAIHistoryMessage[];
 }
 
+export interface TarotAIStreamOptions {
+  signal?: AbortSignal;
+  onDelta?: (delta: string, fullText: string) => void;
+}
+
 function getCopy(language: Language) {
   return language === 'zh'
     ? {
@@ -181,11 +186,11 @@ function getGLMErrorMessage(data: any) {
   return '';
 }
 
-function getGLMText(data: any) {
-  const content = data?.choices?.[0]?.message?.content;
+function getGLMDeltaText(data: any) {
+  const content = data?.choices?.[0]?.delta?.content;
 
   if (typeof content === 'string') {
-    return content.trim();
+    return content;
   }
 
   if (Array.isArray(content)) {
@@ -195,14 +200,96 @@ function getGLMText(data: any) {
         if (typeof part?.text === 'string') return part.text;
         return '';
       })
-      .join('')
-      .trim();
+      .join('');
   }
 
   return '';
 }
 
-export async function requestTarotInterpretation(request: TarotAIRequest) {
+function findEventBoundary(buffer: string) {
+  const match = /\r?\n\r?\n/.exec(buffer);
+  return match ? { index: match.index, length: match[0].length } : null;
+}
+
+function readSSEData(eventBlock: string) {
+  return eventBlock
+    .split(/\r?\n/)
+    .filter(line => line.startsWith('data:'))
+    .map(line => line.slice(5).trimStart())
+    .join('\n');
+}
+
+export async function readGLMEventStream(
+  stream: ReadableStream<Uint8Array>,
+  onDelta?: (delta: string, fullText: string) => void,
+) {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullText = '';
+  let isDone = false;
+
+  const processEvent = (eventBlock: string) => {
+    const dataText = readSSEData(eventBlock);
+    if (!dataText) return;
+
+    if (dataText === '[DONE]') {
+      isDone = true;
+      return;
+    }
+
+    let data: any;
+
+    try {
+      data = JSON.parse(dataText);
+    } catch {
+      throw new Error('Invalid JSON received from the GLM streaming response.');
+    }
+
+    const streamError = getGLMErrorMessage(data);
+    if (streamError && !data?.choices) {
+      throw new Error(streamError);
+    }
+
+    const delta = getGLMDeltaText(data);
+    if (!delta) return;
+
+    fullText += delta;
+    onDelta?.(delta, fullText);
+  };
+
+  try {
+    while (!isDone) {
+      const { value, done } = await reader.read();
+      buffer += decoder.decode(value, { stream: !done });
+
+      let boundary = findEventBoundary(buffer);
+      while (boundary) {
+        const eventBlock = buffer.slice(0, boundary.index);
+        buffer = buffer.slice(boundary.index + boundary.length);
+        processEvent(eventBlock);
+        if (isDone) break;
+        boundary = findEventBoundary(buffer);
+      }
+
+      if (done) {
+        if (!isDone && buffer.trim()) {
+          processEvent(buffer);
+        }
+        break;
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return fullText;
+}
+
+export async function streamTarotInterpretation(
+  request: TarotAIRequest,
+  options: TarotAIStreamOptions = {},
+) {
   const copy = getCopy(request.language);
 
   if (!request.settings.apiKey.trim()) {
@@ -216,6 +303,7 @@ export async function requestTarotInterpretation(request: TarotAIRequest) {
   const response = await fetch(GLM_CHAT_COMPLETIONS_URL, {
     method: 'POST',
     headers: {
+      Accept: 'text/event-stream',
       'Content-Type': 'application/json',
       Authorization: `Bearer ${request.settings.apiKey.trim()}`,
     },
@@ -223,21 +311,27 @@ export async function requestTarotInterpretation(request: TarotAIRequest) {
       model: normalizeGLMModelName(request.settings.model),
       messages: buildMessages(request),
       temperature: 0.85,
-      stream: false,
+      stream: true,
     }),
+    signal: options.signal,
   });
 
-  let data: any = null;
-
-  try {
-    data = await response.json();
-  } catch {
-    data = null;
-  }
-
   if (!response.ok) {
+    let data: any = null;
+
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
     throw new Error(getGLMErrorMessage(data) || copy.error);
   }
 
-  return getGLMText(data) || copy.fallback;
+  if (!response.body) {
+    throw new Error(copy.error);
+  }
+
+  const fullText = await readGLMEventStream(response.body, options.onDelta);
+  return fullText.trim() || copy.fallback;
 }

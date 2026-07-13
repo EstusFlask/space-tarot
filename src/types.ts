@@ -23,6 +23,7 @@ export interface ChatMessage {
   role: 'ai' | 'user';
   text: string;
   timestamp: string;
+  status?: 'streaming' | 'complete' | 'error';
   isFallback?: boolean;
   retryText?: string;
 }

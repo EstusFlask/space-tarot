@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { DrawnCard } from '../types';
 import { getLocalizedCardName, getTarotImageByName, TarotSpread } from '../data/tarotCards';
-import { Sparkles, ArrowRight, RefreshCw, AlertCircle, X } from 'lucide-react';
+import { Sparkles, ArrowRight, RefreshCw, X } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
 import type { ThemeMode } from '../types';
 import cardBackDayImage from '../../images/card_back/card_back_day.png?url';
@@ -11,13 +11,13 @@ import RetryingImage from './RetryingImage';
 import ViewportPortal from './ViewportPortal';
 import type { AISettings } from '../utils/aiSettings';
 import { hasAIKey } from '../utils/aiSettings';
-import { requestTarotInterpretation } from '../utils/glmClient';
 import { localizeKeyword } from '../utils/keywords';
 
 interface CardRevealViewProps {
   spread: TarotSpread;
   drawnCards: DrawnCard[];
-  onProceedToChat: (preloadedAIAnalysis: string, question?: string) => void;
+  onConsultOracle: (question: string) => void;
+  isAiLoading: boolean;
   question: string;
   language: Language;
   aiSettings: AISettings;
@@ -32,7 +32,8 @@ interface CardRevealViewProps {
 export default function CardRevealView({
   spread,
   drawnCards,
-  onProceedToChat,
+  onConsultOracle,
+  isAiLoading,
   question,
   language,
   aiSettings,
@@ -48,8 +49,6 @@ export default function CardRevealView({
   ));
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
   const [isClosingMeaning, setIsClosingMeaning] = useState(false);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
   const [showQuestionPrompt, setShowQuestionPrompt] = useState(false);
   const meaningPanelRef = useRef<HTMLDivElement>(null);
   const copy = UI_COPY[language].cardReveal;
@@ -78,40 +77,6 @@ export default function CardRevealView({
     setFlipped(allIndices);
   };
 
-  const consultGLM = async (focusQuestion: string) => {
-    setIsAiLoading(true);
-    setAiError(null);
-
-    try {
-      const payload = {
-        settings: aiSettings,
-        spreadName: localizedSpread.name,
-        question: focusQuestion,
-        language,
-        cardsDrawn: drawnCards.map(dc => ({
-          name: dc.card.name,
-          displayName: getLocalizedCardName(dc.card.name, language),
-          positionName: localizedSpread.positions[dc.positionIndex]?.name ?? dc.positionName,
-          positionDesc: localizedSpread.positions[dc.positionIndex]?.description ?? dc.positionDesc,
-          isUpright: dc.isUpright,
-          keywords: (dc.isUpright ? dc.card.uprightKeywords : dc.card.reversedKeywords).map(k =>
-            localizeKeyword(k, dc.card.name, language),
-          ),
-          arcana: getLocalizedArcanaLabel(dc.card, language),
-          description: dc.card.description,
-        })),
-      };
-
-      const interpretation = await requestTarotInterpretation(payload);
-      onProceedToChat(interpretation, focusQuestion);
-    } catch (err: any) {
-      console.error('Error in Oracle consultation:', err);
-      setAiError(err.message || copy.consultationError);
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-
   const handleConsultOracle = async () => {
     if (hasExistingOracleSession) {
       onReturnToChat();
@@ -119,23 +84,21 @@ export default function CardRevealView({
     }
 
     if (!hasAIKey(aiSettings)) {
-      setAiError(null);
       onOpenAISettings();
       return;
     }
 
     if (!question.trim()) {
-      setAiError(null);
       setShowQuestionPrompt(true);
       return;
     }
 
-    await consultGLM(question.trim());
+    onConsultOracle(question.trim());
   };
 
   const handleSubmitQuestionPrompt = (focusQuestion: string) => {
     setShowQuestionPrompt(false);
-    void consultGLM(focusQuestion);
+    onConsultOracle(focusQuestion);
   };
 
   const getThemeClass = (theme: string) => {
@@ -488,27 +451,6 @@ export default function CardRevealView({
             <p className="font-sans text-sm text-[#bbc9cf] max-w-sm">
               {copy.loadingBody(localizedSpread.name)}
             </p>
-          </div>
-        </ViewportPortal>
-      )}
-
-      {/* Error displays */}
-      {aiError && (
-        <ViewportPortal>
-          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] w-[90%] max-w-md liquid-glass p-4 rounded-xl border border-red-500/30 flex gap-3 text-left">
-            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-            <div>
-              <h5 className="font-sans font-bold text-red-300 text-xs uppercase tracking-wide">
-                {copy.errorTitle}
-              </h5>
-              <p className="font-sans text-xs text-red-200 mt-1">{aiError}</p>
-              <button
-                onClick={handleConsultOracle}
-                className="text-white underline text-[10px] font-bold mt-2 hover:opacity-80 block"
-              >
-                {copy.retry}
-              </button>
-            </div>
           </div>
         </ViewportPortal>
       )}

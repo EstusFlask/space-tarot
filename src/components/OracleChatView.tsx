@@ -2,11 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, DrawnCard } from '../types';
 import { getLocalizedCardName, getTarotImageByName, TarotSpread } from '../data/tarotCards';
 import ReactMarkdown from 'react-markdown';
-import { Send, Sparkles, Download, CheckCircle, RefreshCw, ArrowLeft, RotateCcw } from 'lucide-react';
-import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
-import type { AISettings } from '../utils/aiSettings';
-import { hasAIKey } from '../utils/aiSettings';
-import { getTarotFallbackText, requestTarotInterpretation } from '../utils/glmClient';
+import { Send, Download, CheckCircle, RefreshCw, ArrowLeft, RotateCcw } from 'lucide-react';
+import { Language, UI_COPY, getLocalizedSpread } from '../data/localization';
 import ViewportPortal from './ViewportPortal';
 import RetryingImage from './RetryingImage';
 import { AI_MARKDOWN_REMARK_PLUGINS, prepareAIMessageMarkdown } from '../utils/aiMarkdown';
@@ -14,14 +11,14 @@ import { AI_MARKDOWN_REMARK_PLUGINS, prepareAIMessageMarkdown } from '../utils/a
 interface OracleChatViewProps {
   spread: TarotSpread;
   drawnCards: DrawnCard[];
-  initialAnalysis: string;
   question: string;
   onReset: () => void;
   language: Language;
-  aiSettings: AISettings;
-  onOpenAISettings: () => void;
-  storedMessages: ChatMessage[];
-  onMessagesChange: (messages: ChatMessage[]) => void;
+  messages: ChatMessage[];
+  isLoading: boolean;
+  activeMessageId: string | null;
+  onSendMessage: (text: string) => boolean;
+  onRetryMessage: (messageId: string) => void;
   onSaveReading: () => Promise<boolean> | boolean;
   isSavingReading: boolean;
   onReturnToSpread: () => void;
@@ -30,14 +27,14 @@ interface OracleChatViewProps {
 export default function OracleChatView({
   spread,
   drawnCards,
-  initialAnalysis,
   question,
   onReset,
   language,
-  aiSettings,
-  onOpenAISettings,
-  storedMessages,
-  onMessagesChange,
+  messages,
+  isLoading,
+  activeMessageId,
+  onSendMessage,
+  onRetryMessage,
   onSaveReading,
   isSavingReading,
   onReturnToSpread,
@@ -45,180 +42,20 @@ export default function OracleChatView({
   const copy = UI_COPY[language].oracleChat;
   const commonCopy = UI_COPY[language].common;
   const localizedSpread = getLocalizedSpread(spread, language);
-  const fallbackText = getTarotFallbackText(language);
-  const retryFallbackLabel = language === 'zh' ? '重新询问' : 'Ask again';
-  const localizeKeyword = (keyword: string, cardName: string) => {
-    if (keyword === cardName) {
-      return getLocalizedCardName(cardName, language);
-    }
-
-    if (keyword === 'Upright') {
-      return commonCopy.upright;
-    }
-
-    if (keyword === 'Reversed') {
-      return commonCopy.reversed;
-    }
-
-    return keyword;
-  };
-  const getTimestamp = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const createAIMessage = (text: string, retryText?: string, id = `ai-${Date.now()}`): ChatMessage => {
-    const isFallback = text === fallbackText;
-
-    return {
-      id,
-      role: 'ai',
-      text,
-      timestamp: getTimestamp(),
-      isFallback,
-      retryText: isFallback ? retryText : undefined,
-    };
-  };
-  const attachFallbackRetry = (message: ChatMessage): ChatMessage => {
-    if (message.role !== 'ai' || message.text !== fallbackText) return message;
-
-    return {
-      ...message,
-      isFallback: true,
-      retryText: typeof message.retryText === 'string' ? message.retryText : question,
-    };
-  };
-  const [messages, setMessages] = useState<ChatMessage[]>(() => (
-    storedMessages.length
-      ? storedMessages.map(attachFallbackRetry)
-      : [createAIMessage(initialAnalysis, question, 'init-oracle')]
-  ));
+  const retryLabel = language === 'zh' ? '重新询问' : 'Ask again';
   const [userInput, setUserInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [retryingMessageId, setRetryingMessageId] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    onMessagesChange(messages);
-  }, [messages, onMessagesChange]);
+  const chatStreamRef = useRef<HTMLDivElement | null>(null);
+  const userNearBottomRef = useRef(true);
 
   // Auto-scroll to the latest message
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (userNearBottomRef.current) {
+      chatEndRef.current?.scrollIntoView({ behavior: isLoading ? 'auto' : 'smooth' });
+    }
   }, [messages, isLoading]);
-
-  const requestAIMessage = async (textToSend: string, historyMessages: ChatMessage[], id?: string) => {
-    const payload = {
-      spreadName: localizedSpread.name,
-      question: textToSend,
-      language,
-      cardsDrawn: drawnCards.map(dc => ({
-        name: dc.card.name,
-        displayName: getLocalizedCardName(dc.card.name, language),
-        positionName: localizedSpread.positions[dc.positionIndex]?.name ?? dc.positionName,
-        isUpright: dc.isUpright,
-        keywords: (dc.isUpright ? dc.card.uprightKeywords : dc.card.reversedKeywords).map(k =>
-          localizeKeyword(k, dc.card.name),
-        ),
-        arcana: getLocalizedArcanaLabel(dc.card, language),
-        description: dc.card.description,
-      })),
-      history: historyMessages
-        .filter(msg => !msg.isFallback)
-        .map(msg => ({
-          role: msg.role,
-          text: msg.text,
-        })),
-    };
-
-    const interpretation = await requestTarotInterpretation({
-      ...payload,
-      settings: aiSettings,
-    });
-
-    return createAIMessage(interpretation, textToSend, id);
-  };
-
-  const handleSendMessage = async (rawTextToSend: string) => {
-    const textToSend = rawTextToSend.trim();
-    if (!textToSend || isLoading) return;
-
-    if (!hasAIKey(aiSettings)) {
-      onOpenAISettings();
-      return;
-    }
-
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      text: textToSend,
-      timestamp: getTimestamp(),
-    };
-    const historyMessages = messages;
-
-    setMessages(prev => [...prev, userMsg]);
-    setUserInput('');
-    setIsLoading(true);
-
-    try {
-      const aiMsg = await requestAIMessage(textToSend, historyMessages);
-      setMessages(prev => [...prev, aiMsg]);
-    } catch (err: any) {
-      console.error(err);
-      const errorMsg: ChatMessage = {
-        id: `err-${Date.now()}`,
-        role: 'ai',
-        text: copy.errorText,
-        timestamp: getTimestamp(),
-      };
-      setMessages(prev => [...prev, errorMsg]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRetryFallback = async (message: ChatMessage) => {
-    if (isLoading || typeof message.retryText !== 'string') return;
-
-    if (!hasAIKey(aiSettings)) {
-      onOpenAISettings();
-      return;
-    }
-
-    const messageIndex = messages.findIndex(item => item.id === message.id);
-    if (messageIndex === -1) return;
-
-    const retryHistory = messages.slice(0, messageIndex);
-    const previousMessage = retryHistory[retryHistory.length - 1];
-    const historyMessages =
-      previousMessage?.role === 'user' && previousMessage.text === message.retryText
-        ? retryHistory.slice(0, -1)
-        : retryHistory;
-
-    setIsLoading(true);
-    setRetryingMessageId(message.id);
-
-    try {
-      const aiMsg = await requestAIMessage(message.retryText, historyMessages, message.id);
-      setMessages(prev => prev.map(item => (item.id === message.id ? aiMsg : item)));
-    } catch (err: any) {
-      console.error(err);
-      setMessages(prev =>
-        prev.map(item =>
-          item.id === message.id
-            ? {
-                ...item,
-                text: copy.errorText,
-                timestamp: getTimestamp(),
-                isFallback: false,
-                retryText: undefined,
-              }
-            : item,
-        ),
-      );
-    } finally {
-      setIsLoading(false);
-      setRetryingMessageId(null);
-    }
-  };
 
   const handleSaveReading = async () => {
     if (isLoading || isSavingSnapshot || isSavingReading || isSaved) return;
@@ -263,7 +100,8 @@ export default function OracleChatView({
         <div className="flex flex-wrap items-center gap-2 relative z-20 w-full md:w-auto shrink-0 justify-center md:justify-end">
           <button
             onClick={onReturnToSpread}
-            className="liquid-glass-control px-4 py-2 rounded-full border border-[#a5e7ff]/25 text-[#a5e7ff] hover:bg-[#a5e7ff]/10 transition-all text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 cursor-pointer"
+            disabled={isLoading}
+            className="liquid-glass-control px-4 py-2 rounded-full border border-[#a5e7ff]/25 text-[#a5e7ff] hover:bg-[#a5e7ff]/10 transition-all text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             {copy.backToSpread}
@@ -307,7 +145,14 @@ export default function OracleChatView({
       </div>
 
       {/* Main Chat Conversation Stream container */}
-      <div className="oracle-chat-stream flex-1 overflow-y-auto px-4 pb-32 pt-2 gap-4 flex flex-col chat-scroll">
+      <div
+        ref={chatStreamRef}
+        onScroll={event => {
+          const element = event.currentTarget;
+          userNearBottomRef.current = element.scrollHeight - element.scrollTop - element.clientHeight < 120;
+        }}
+        className="oracle-chat-stream flex-1 overflow-y-auto px-4 pb-32 pt-2 gap-4 flex flex-col chat-scroll"
+      >
         {/* Draw cards presentation summary for quick references */}
         <div className="liquid-glass liquid-glass-card oracle-clean-panel border border-white/5 rounded-xl p-4 flex flex-wrap gap-2.5 justify-center items-center shrink-0 mb-2 relative overflow-hidden">
           {drawnCards.map((dc, i) => (
@@ -340,7 +185,10 @@ export default function OracleChatView({
         {/* Message bubbles list */}
         {messages.map(msg => {
           const isAi = msg.role === 'ai';
-          const canRetryFallback = isAi && msg.isFallback && typeof msg.retryText === 'string';
+          const isStreamingMessage = isAi && msg.status === 'streaming';
+          const canRetry = isAi && msg.status !== 'streaming' && typeof msg.retryText === 'string';
+          if (isStreamingMessage && !msg.text) return null;
+
           return (
             <div
               key={msg.id}
@@ -356,7 +204,9 @@ export default function OracleChatView({
                 <div
                   className={`rounded-2xl px-5 py-4 text-sm leading-relaxed relative overflow-hidden max-w-full break-words ${
                     isAi
-                      ? 'liquid-glass liquid-glass-card oracle-clean-panel border border-white/10 text-[#dfe2f3]'
+                      ? msg.status === 'error'
+                        ? 'liquid-glass liquid-glass-card oracle-clean-panel border border-red-400/35 text-red-100'
+                        : 'liquid-glass liquid-glass-card oracle-clean-panel border border-white/10 text-[#dfe2f3]'
                       : 'liquid-glass liquid-glass-card oracle-clean-panel border border-[#a5e7ff]/30 text-[#dfe2f3]'
                   }`}
                 >
@@ -412,19 +262,25 @@ export default function OracleChatView({
                   ) : (
                     msg.text
                   )}
+                  {isStreamingMessage && (
+                    <span
+                      aria-label={language === 'zh' ? '正在输出' : 'Streaming'}
+                      className="ml-1 inline-block h-4 w-1 animate-pulse rounded-full bg-[#fface8] align-middle"
+                    />
+                  )}
                 </div>
                 </div>
 
-                {canRetryFallback && (
+                {canRetry && (
                   <button
                     type="button"
-                    aria-label={retryFallbackLabel}
-                    title={retryFallbackLabel}
-                    onClick={() => handleRetryFallback(msg)}
+                    aria-label={retryLabel}
+                    title={retryLabel}
+                    onClick={() => onRetryMessage(msg.id)}
                     disabled={isLoading}
                     className="liquid-glass-control mt-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#fface8]/35 text-[#fface8] transition-all hover:bg-[#fface8]/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {retryingMessageId === msg.id ? (
+                    {activeMessageId === msg.id ? (
                       <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <RotateCcw className="h-3.5 w-3.5" />
@@ -437,7 +293,7 @@ export default function OracleChatView({
         })}
 
         {/* Typing indicator from the Oracle */}
-        {isLoading && !retryingMessageId && (
+        {isLoading && !messages.some(message => message.id === activeMessageId && message.text) && (
           <div className="self-start text-left flex flex-col gap-1 max-w-[80%] mb-2">
             <span className="text-[9px] font-sans font-bold tracking-widest text-[#bbc9cf]/40 uppercase px-1.5">
               {copy.meditating}
@@ -462,7 +318,7 @@ export default function OracleChatView({
           {quickPrompts.map((p, i) => (
             <button
               key={i}
-              onClick={() => handleSendMessage(p.text)}
+              onClick={() => onSendMessage(p.text)}
               disabled={isLoading}
               className="liquid-glass-chip text-[10px] font-sans font-semibold border border-white/10 hover:border-[#fface8]/45 rounded-full px-4 py-1.5 text-[#bbc9cf] hover:text-[#fface8] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -475,7 +331,9 @@ export default function OracleChatView({
         <form
           onSubmit={e => {
             e.preventDefault();
-            handleSendMessage(userInput);
+            if (onSendMessage(userInput)) {
+              setUserInput('');
+            }
           }}
           className="relative max-w-3xl mx-auto"
         >
