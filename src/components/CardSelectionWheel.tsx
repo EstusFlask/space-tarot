@@ -6,8 +6,8 @@ import { cryptoRandomBoolean, cryptoRandomInt, cryptoShuffle } from '../utils/cr
 import { haptics } from '../utils/haptics';
 import { Language, UI_COPY, getLocalizedSpread } from '../data/localization';
 import type { ThemeMode } from '../types';
-import cardBackDayImage from '../../images/card_back/card_back_day.png?url';
-import cardBackNightImage from '../../images/card_back/card_back_night.png?url';
+import cardBackDayImage from '../generated/card_backs/card_back_day.webp?url';
+import cardBackNightImage from '../generated/card_backs/card_back_night.webp?url';
 import RetryingImage from './RetryingImage';
 
 const TOTAL_CARDS_IN_WHEEL = 78;

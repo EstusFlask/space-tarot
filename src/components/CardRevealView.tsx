@@ -4,8 +4,8 @@ import { getLocalizedCardName, getTarotImageByName, TarotSpread } from '../data/
 import { Sparkles, ArrowRight, RefreshCw, X } from 'lucide-react';
 import { Language, UI_COPY, getLocalizedArcanaLabel, getLocalizedSpread } from '../data/localization';
 import type { ThemeMode } from '../types';
-import cardBackDayImage from '../../images/card_back/card_back_day.png?url';
-import cardBackNightImage from '../../images/card_back/card_back_night.png?url';
+import cardBackDayImage from '../generated/card_backs/card_back_day.webp?url';
+import cardBackNightImage from '../generated/card_backs/card_back_night.webp?url';
 import QuestionPromptDialog from './QuestionPromptDialog';
 import RetryingImage from './RetryingImage';
 import ViewportPortal from './ViewportPortal';

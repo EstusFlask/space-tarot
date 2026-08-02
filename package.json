@@ -4,8 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predev": "npm run generate:assets",
     "dev": "tsx server.ts",
     "generate:tarots": "node scripts/generate-tarots.mjs",
+    "generate:card-backs": "node scripts/generate-card-backs.mjs",
+    "generate:assets": "npm run generate:tarots && npm run generate:card-backs",
+    "prebuild": "npm run generate:assets",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",

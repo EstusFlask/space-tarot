@@ -24,8 +24,8 @@ import { AssetRefreshContext } from './utils/assetRefresh';
 import { buildReadingSnapshotFilename, downloadElementAsPng } from './utils/downloadSnapshot';
 import { getTarotFallbackText, streamTarotInterpretation } from './utils/glmClient';
 import { localizeKeyword } from './utils/keywords';
-import cardBackDayImage from '../images/card_back/card_back_day.png?url';
-import cardBackNightImage from '../images/card_back/card_back_night.png?url';
+import cardBackDayImage from './generated/card_backs/card_back_day.webp?url';
+import cardBackNightImage from './generated/card_backs/card_back_night.webp?url';
 
 interface DevDebugReading {
   spread: TarotSpread;
@@ -224,7 +224,7 @@ export default function App() {
     window.scrollTo({ top: 0, left: 0 });
   }, [currentScreen]);
 
-  // Warm the card-back art (large PNGs) before the draw/reveal screens mount so the
+  // Warm the card-back art (large WebPs) before the draw/reveal screens mount so the
   // face-down cards never flash an empty slot — most visible as a white slot in light mode.
   useEffect(() => {
     [cardBackDayImage, cardBackNightImage].forEach(src => {

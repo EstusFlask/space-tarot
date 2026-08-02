@@ -55,6 +55,18 @@ npm run generate:tarots
 
 这个脚本会读取 `images/tarots/*.png`，缩放到 900px 宽，并输出到 `src/generated/tarots/*.webp`。生成前会清空 `src/generated/tarots` 里的旧 `webp`，避免已删除的源图继续被应用读取。
 
+## 卡背图片
+
+应用实际读取的是 `src/generated/card_backs/card_back_day.webp` 和 `card_back_night.webp`。源文件仍然保留在 `images/card_back/*.png`，方便继续编辑；WebP 只是运行时使用的压缩副本，不会替代或破坏原 PNG。
+
+修改卡背 PNG 后，重新启动开发环境或重新构建即可自动生成最新 WebP。也可以单独执行：
+
+```bash
+npm run generate:card-backs
+```
+
+`npm run dev` 和 `npm run build` 都会在启动/构建前自动执行资源生成流程。
+
 每张牌的介绍文字放在 `src/data/cardDescriptions.ts`。你只需要找到对应牌名，把 `description` 填进去即可：
 
 ```ts
