@@ -1,84 +1,64 @@
-# Space Tarot | 星空塔罗
+# Space Tarot
 
-## 本地运行
+A space-themed tarot web app built with React, TypeScript, and Vite, with random card draws, configurable GLM AI readings, and scripts for generating card assets.
 
-1. 安装依赖：
+[简体中文](README.zh-CN.md)
 
-   ```bash
-   npm install
-   ```
+## Run locally
 
-2. 如果要使用 AI 解读功能，在网站右上角的 AI 设置里填写 GLM API key。
-   API key 会保存在当前浏览器的 `localStorage`，同一浏览器下次打开可继续使用。
+```bash
+npm install
+npm run dev
+```
 
-3. 启动开发环境：
+Open `http://localhost:3000`. For AI readings, enter your GLM API key in the app's AI settings. The key is stored in the current browser's `localStorage`; no key is required in the repository's `.env.example`.
 
-   ```bash
-   npm run dev
-   ```
-
-4. 打开浏览器访问：
-
-   ```text
-   http://localhost:3000
-   ```
-
-## 编译和预览生产版本
+## Production build
 
 ```bash
 npm run build
+```
+
+Set `NODE_ENV=production` when starting the built server:
+
+```bash
+# macOS / Linux
+NODE_ENV=production npm run start
+```
+
+```powershell
+# Windows PowerShell
+$env:NODE_ENV = "production"
 npm run start
 ```
 
-然后访问：
+Open `http://localhost:3000`. Without the production environment variable, `server.ts` takes its Vite development path.
 
-```text
-http://localhost:3000
-```
+## Card assets and text
 
-## 填写牌面介绍
+| Source | Generated runtime assets |
+| --- | --- |
+| `images/tarots/*.png` | `src/generated/tarots/*.webp` |
+| `images/card_back/*.png` | `src/generated/card_backs/*.webp` |
 
-牌面图片实际读取的是 `src/generated/tarots/*.webp`，不是直接读取 `images/tarots`。当前仓库里的 `webp` 已经是预先生成好的静态资源，`npm run build` 只是把它们打包进应用。
-
-源图片保留在 `images/tarots/*.png`，如果你要重新导出牌面图，可以从这里开始处理。生成后的文件名会把 `_` 视为空格，例如：
-
-```text
-src/generated/tarots/The_Fool.webp -> The Fool
-src/generated/tarots/Five_of_Cups.webp -> Five of Cups
-```
-
-重新生成牌面 webp：
+`npm run dev` and `npm run build` run `generate:assets` first. To regenerate individual groups:
 
 ```bash
 npm run generate:tarots
-```
-
-这个脚本会读取 `images/tarots/*.png`，缩放到 900px 宽，并输出到 `src/generated/tarots/*.webp`。生成前会清空 `src/generated/tarots` 里的旧 `webp`，避免已删除的源图继续被应用读取。
-
-## 卡背图片
-
-应用实际读取的是 `src/generated/card_backs/card_back_day.webp` 和 `card_back_night.webp`。源文件仍然保留在 `images/card_back/*.png`，方便继续编辑；WebP 只是运行时使用的压缩副本，不会替代或破坏原 PNG。
-
-修改卡背 PNG 后，重新启动开发环境或重新构建即可自动生成最新 WebP。也可以单独执行：
-
-```bash
 npm run generate:card-backs
 ```
 
-`npm run dev` 和 `npm run build` 都会在启动/构建前自动执行资源生成流程。
+The tarot generator scales images to 900 px wide and clears old generated WebP files before writing the new set. Original PNGs remain the editable sources. Filenames such as `The_Fool.webp` map to display names with spaces.
 
-每张牌的介绍文字放在 `src/data/cardDescriptions.ts`。你只需要找到对应牌名，把 `description` 填进去即可：
+Edit card descriptions and optional upright/reversed keywords in [`src/data/cardDescriptions.ts`](src/data/cardDescriptions.ts). See the [Chinese guide](README.zh-CN.md) for an example.
 
-```ts
-'The Fool': {
-  description: '在这里填写愚者牌的介绍。',
-  uprightKeywords: ['new beginning', 'freedom'],
-  reversedKeywords: ['reckless', 'delay'],
-},
+## Random draws
+
+Draws use browser Web Crypto randomness, Fisher–Yates shuffling, and unbiased integer selection. Cards are removed from the remaining deck within a spread, and upright/reversed orientation is randomized independently.
+
+## Development checks
+
+```bash
+npm run lint
+npm test
 ```
-
-`uprightKeywords` 和 `reversedKeywords` 是可选的。不填时，程序会自动使用牌名和正反位作为默认关键词。
-
-## 随机抽牌逻辑
-
-抽牌使用浏览器 Web Crypto API 的 `crypto.getRandomValues`，并通过 Fisher-Yates 洗牌与无偏随机整数抽牌，避免使用 `Math.random()`。每次抽牌都会从剩余牌堆里取牌，所以同一次牌阵不会重复；每张牌的正位/反位也会独立随机决定。
